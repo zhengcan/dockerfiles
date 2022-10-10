@@ -23,8 +23,10 @@ FROM --platform=amd64 openjdk:11-slim-bullseye as runtime
 
 RUN apt update \
   && apt install -y curl procps htop libmysql++3v5 \
-  && apt clean
+  && apt clean \
+  && rm /bin/sh && ln -s /bin/bash /bin/sh
 
 COPY --from=compiler /usr/local /usr/local
 
 ENV LD_PRELOAD=/usr/local/lib/libjemalloc.so
+ENV SHELL=bash
