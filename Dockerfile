@@ -1,7 +1,10 @@
 # syntax=docker/dockerfile:1.2
-ARG BASE=openjdk
-ARG BASE_VER=11-slim-bullseye
-FROM ${BASE}:${BASE_VER}
+
+# compile
+FROM --platform=amd64 debian:bullseye-slim as compiler
+
+RUN apt update \
+  && apt install -y build-essential curl bzip2
 
 ARG JEMALLOC_VER=5.3.0
 RUN --mount=type=tmpfs,target=/jemalloc \
@@ -13,3 +16,6 @@ RUN --mount=type=tmpfs,target=/jemalloc \
   && make -j $(($(nproc) - 2)) \
   && make install
 
+FROM --platform=amd64 openjdk:11-slim-bullseye as runtime
+
+COPY --from=compiler /opt/jemalloc /opt/jemalloc
