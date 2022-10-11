@@ -26,5 +26,3 @@ RUN apt update \
   && apt clean
 
 COPY --from=compiler /usr/local /usr/local
-
-ENV LD_PRELOAD=/usr/local/lib/libjemalloc.so
