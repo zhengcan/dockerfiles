@@ -1,7 +1,14 @@
 ####################
 # deps
 FROM --platform=amd64 openjdk:11-slim-buster as openjdk
+FROM --platform=amd64 dragonwell-registry.cn-hangzhou.cr.aliyuncs.com/dragonwell/dragonwell:11-extended-ga-ubuntu as dragonwell
 
+FROM --platform=amd64 debian:bullseye-slim as select-jdk
+COPY --from=openjdk /usr/local/openjdk-11 /opt/java/openjdk
+COPY --from=dragonwell /opt/java/openjdk /opt/java/dragonwell
+
+ARG JDK=openjdk
+RUN mv /opt/java/${JDK} /opt/java/jdk
 
 ####################
 # essential
@@ -12,10 +19,10 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   && rm /bin/sh && ln -s /bin/bash /bin/sh
 
-COPY --from=openjdk /usr/local/openjdk-11 /usr/local/openjdk-11
+COPY --from=select-jdk /opt/java/jdk /opt/java/jdk
 
-ENV JAVA_HOME=/usr/local/openjdk-11 \
-    PATH="/usr/local/openjdk-11/bin:$PATH"
+ENV JAVA_HOME=/opt/java/jdk \
+    PATH="/opt/java/jdk/bin:$PATH"
 
 CMD ["/bin/bash"]
 
