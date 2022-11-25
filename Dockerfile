@@ -51,21 +51,21 @@ RUN . "/root/.bashrc" \
   && ln -s /opt/sbt/bin/sbt                     /usr/local/bin/sbt
 
 # FNM, Node, Yarn, PNPM
-ENV PATH=$PATH:/root/.fnm:/root/.fnm/aliases/default/bin
+ENV PATH=$PATH:/root/.local/share/fnm:/root/.local/share/fnm/aliases/default/bin
 RUN export SHELL=bash \
   && curl -fsSL https://raw.githubusercontent.com/Schniz/fnm/master/.ci/install.sh | bash
 RUN . "/root/.bashrc" \
   && fnm install --lts \
   && npm install -g npm yarn pnpm
-RUN ln -s /root/.fnm/aliases/default/bin/node /opt/node \
-  && ln -s /root/.fnm/aliases/default/bin/corepack /usr/local/bin/corepack \
-  && ln -s /root/.fnm/aliases/default/bin/node /usr/local/bin/node \
-  && ln -s /root/.fnm/aliases/default/bin/npm /usr/local/bin/npm \
-  && ln -s /root/.fnm/aliases/default/bin/npx /usr/local/bin/npx \
-  && ln -s /root/.fnm/aliases/default/bin/pnpm /usr/local/bin/pnpm \
-  && ln -s /root/.fnm/aliases/default/bin/pnpx /usr/local/bin/pnpx \
-  && ln -s /root/.fnm/aliases/default/bin/yarn /usr/local/bin/yarn \
-  && ln -s /root/.fnm/aliases/default/bin/yarnpkg /usr/local/bin/yarnpkg
+RUN ln -s /root/.local/share/fnm/aliases/default/bin/node /opt/node \
+  && ln -s /root/.local/share/fnm/aliases/default/bin/corepack /usr/local/bin/corepack \
+  && ln -s /root/.local/share/fnm/aliases/default/bin/node /usr/local/bin/node \
+  && ln -s /root/.local/share/fnm/aliases/default/bin/npm /usr/local/bin/npm \
+  && ln -s /root/.local/share/fnm/aliases/default/bin/npx /usr/local/bin/npx \
+  && ln -s /root/.local/share/fnm/aliases/default/bin/pnpm /usr/local/bin/pnpm \
+  && ln -s /root/.local/share/fnm/aliases/default/bin/pnpx /usr/local/bin/pnpx \
+  && ln -s /root/.local/share/fnm/aliases/default/bin/yarn /usr/local/bin/yarn \
+  && ln -s /root/.local/share/fnm/aliases/default/bin/yarnpkg /usr/local/bin/yarnpkg
 RUN npm config list \
   && yarn config list \
   && pnpm config list
