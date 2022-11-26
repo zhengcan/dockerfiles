@@ -48,24 +48,24 @@ RUN . "/root/.bashrc" \
   && echo "sdkman_debug_mode=false" >> $SDKMAN_DIR/etc/config \
   && sdk install sbt $SBT_VER \
   && ln -s $SDKMAN_DIR/candidates/sbt/current/  /opt/sbt \
-  && ln -s /opt/sbt/bin/sbt                     /usr/local/bin/sbt
+  && ln -s /opt/sbt/bin/sbt                     /usr/bin/sbt
 
 # FNM, Node, Yarn, PNPM
-ENV PATH=$PATH:/root/.local/share/fnm:/root/.local/share/fnm/aliases/default/bin
-RUN export SHELL=bash \
-  && curl -fsSL https://raw.githubusercontent.com/Schniz/fnm/master/.ci/install.sh | bash
-RUN . "/root/.bashrc" \
-  && fnm install --lts \
-  && npm install -g npm yarn pnpm
-RUN ln -s /root/.local/share/fnm/aliases/default/bin/node /opt/node \
-  && ln -s /root/.local/share/fnm/aliases/default/bin/corepack /usr/local/bin/corepack \
-  && ln -s /root/.local/share/fnm/aliases/default/bin/node /usr/local/bin/node \
-  && ln -s /root/.local/share/fnm/aliases/default/bin/npm /usr/local/bin/npm \
-  && ln -s /root/.local/share/fnm/aliases/default/bin/npx /usr/local/bin/npx \
-  && ln -s /root/.local/share/fnm/aliases/default/bin/pnpm /usr/local/bin/pnpm \
-  && ln -s /root/.local/share/fnm/aliases/default/bin/pnpx /usr/local/bin/pnpx \
-  && ln -s /root/.local/share/fnm/aliases/default/bin/yarn /usr/local/bin/yarn \
-  && ln -s /root/.local/share/fnm/aliases/default/bin/yarnpkg /usr/local/bin/yarnpkg
+ENV PATH=$PATH:/opt/node/bin
+RUN cd /opt \
+  && curl -fLO https://nodejs.org/dist/v18.12.1/node-v18.12.1-linux-x64.tar.xz \
+  && tar xvf node-v18.12.1-linux-x64.tar.xz \
+  && rm node-v18.12.1-linux-x64.tar.xz \
+  && mv node-v18.12.1-linux-x64 node \
+  && ln -s /opt/node/bin/corepack /usr/bin/corepack \
+  && ln -s /opt/node/bin/node /usr/bin/node \
+  && ln -s /opt/node/bin/npm /usr/bin/npm \
+  && ln -s /opt/node/bin/npx /usr/bin/npx
+RUN npm install -g npm pnpm yarn \
+  && ln -s /opt/node/bin/pnpm /usr/bin/pnpm \
+  && ln -s /opt/node/bin/pnpx /usr/bin/pnpx \
+  && ln -s /opt/node/bin/yarn /usr/bin/yarn \
+  && ln -s /opt/node/bin/yarnpkg /usr/bin/yarnpkg
 RUN npm config list \
   && yarn config list \
   && pnpm config list
