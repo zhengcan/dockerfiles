@@ -10,6 +10,7 @@ COPY --from=dragonwell /opt/java/openjdk /opt/java/dragonwell
 ARG JDK=openjdk
 RUN mv /opt/java/${JDK} /opt/java/jdk
 
+
 ####################
 # essential
 FROM --platform=amd64 debian:bullseye-slim as essential
@@ -38,8 +39,8 @@ RUN apt-get update \
   && apt-get clean
 
 # SDK Man & Sbt
-ENV SDKMAN_DIR /usr/local/sdkman
-ENV SBT_VER 1.3.13
+ENV SDKMAN_DIR=/usr/local/sdkman
+ENV SBT_VER=1.6.2
 RUN curl -s get.sdkman.io | bash
 RUN . "/root/.bashrc" \
   && echo "sdkman_auto_answer=true" > $SDKMAN_DIR/etc/config \
@@ -51,12 +52,13 @@ RUN . "/root/.bashrc" \
   && ln -s /opt/sbt/bin/sbt                     /usr/bin/sbt
 
 # FNM, Node, Yarn, PNPM
+ENV NODE_VER=18.12.1
 ENV PATH=$PATH:/opt/node/bin
 RUN cd /opt \
-  && curl -fLO https://nodejs.org/dist/v18.12.1/node-v18.12.1-linux-x64.tar.xz \
-  && tar xvf node-v18.12.1-linux-x64.tar.xz \
-  && rm node-v18.12.1-linux-x64.tar.xz \
-  && mv node-v18.12.1-linux-x64 node \
+  && curl -fLO https://nodejs.org/dist/v${NODE_VER}/node-v${NODE_VER}-linux-x64.tar.xz \
+  && tar xvf node-v${NODE_VER}-linux-x64.tar.xz \
+  && rm node-v${NODE_VER}-linux-x64.tar.xz \
+  && mv node-v${NODE_VER}-linux-x64 node \
   && ln -s /opt/node/bin/corepack /usr/bin/corepack \
   && ln -s /opt/node/bin/node /usr/bin/node \
   && ln -s /opt/node/bin/npm /usr/bin/npm \
@@ -80,12 +82,12 @@ RUN cargo install sccache \
 
 
 ####################
-# jemalloc
-FROM --platform=amd64 builder as jemalloc
+# jemalloc & tcmalloc
+FROM --platform=amd64 builder as malloc
 
 ENV JEMALLOC_VER=5.3.0
 RUN mkdir -p /jemalloc \
-  cd /jemalloc \
+  && cd /jemalloc \
   && curl -fLO https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VER}/jemalloc-${JEMALLOC_VER}.tar.bz2 \
   && tar -jxvf jemalloc-${JEMALLOC_VER}.tar.bz2 \
   && cd jemalloc-${JEMALLOC_VER} \
@@ -95,10 +97,19 @@ RUN mkdir -p /jemalloc \
   && mkdir -p /usr/local \
   && make install
 
+RUN apt update \
+  && apt install libtcmalloc-minimal4 \
+  && mv /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so.4 \
+  && ln -s /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so \
+  && ln -s /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc.so
+
 
 ####################
 # runtime
 FROM --platform=amd64 essential as runtime
 
-COPY --from=jemalloc /usr/local /usr/local
+ENV JEMALLOC_SO=/usr/local/lib/libjemalloc.so
+ENV TCMALLOC_SO=/usr/local/lib/libtcmalloc.so
+
+COPY --from=malloc /usr/local /usr/local
 
