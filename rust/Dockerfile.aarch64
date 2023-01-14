@@ -1,0 +1,97 @@
+##############################
+# Base
+##############################
+FROM arm64v8/gcc:10 AS base
+
+# Update OS
+RUN apt update && apt upgrade -y
+
+# Install build tools
+RUN apt install -y git git-lfs
+RUN apt install -y ninja-build
+RUN apt install -y clang-13
+RUN apt install -y cmake
+
+# CC & CXX
+ENV CC=clang-13
+ENV CXX=clang++-13
+
+
+##############################
+# OpenCV
+##############################
+FROM base AS opencv
+
+# OpenCV
+ARG OPENCV_VER=4.6.0
+RUN cd /root ; \
+    mkdir opencv && cd opencv ; \
+    wget -O opencv-${OPENCV_VER}.tgz https://github.com/opencv/opencv/archive/refs/tags/${OPENCV_VER}.tar.gz ; \
+    tar xvf opencv-${OPENCV_VER}.tgz ; \
+    rm opencv-${OPENCV_VER}.tgz ; \
+    wget -O opencv_contrib-${OPENCV_VER}.tgz https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VER}.tar.gz ; \
+    tar xvf opencv_contrib-${OPENCV_VER}.tgz ; \
+    rm opencv_contrib-${OPENCV_VER}.tgz ; \
+    mkdir build && cd build ; \
+    cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules ../opencv-${OPENCV_VER} ; \
+    cmake --build . -j $(nproc) ; \
+    make install ; \
+    rm -rf /root/opencv
+
+
+##############################
+# Rust
+##############################
+FROM base AS rust
+
+# Rust
+ENV PATH=/root/.cargo/bin:$PATH
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly
+RUN wget https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-aarch64-unknown-linux-musl.tgz \
+    && tar xvf cargo-binstall-aarch64-unknown-linux-musl.tgz \
+    && mv cargo-binstall /root/.cargo/bin \
+    && rm cargo-binstall-aarch64-unknown-linux-musl.tgz
+RUN cargo binstall -y sccache
+RUN echo '[build]' >> /root/.cargo/config.toml ; \
+    echo 'rustc-wrapper = "/root/.cargo/bin/sccache"' >> /root/.cargo/config.toml
+RUN cargo binstall -y cargo-watch
+
+
+##############################
+# Builder
+##############################
+FROM rust AS builder
+
+COPY --from=opencv /usr/local/lib64 /usr/local/lib64
+
+ENV LD_LIBRARY_PATH=/usr/local/lib64
+
+
+##############################
+# Runtime
+##############################
+FROM arm64v8/oraclelinux:8 AS runtime
+
+COPY --from=opencv /usr/local/lib64 /usr/local/lib64
+
+ENV LD_LIBRARY_PATH=/usr/local/lib64
+
+RUN yum install -y fontconfig
+
+WORKDIR /app
+
+
+##############################
+# Test
+##############################
+FROM builder AS test-builder
+# skia-rust
+RUN git clone https://github.com/rust-skia/rust-skia/
+RUN cd rust-skia && cargo build --release
+##
+FROM runtime AS test-runtime
+# run
+COPY --from=test-builder /rust-skia/target/release/skia-org /app/skia-org
+RUN ./skia-org
+
+
