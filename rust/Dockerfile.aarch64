@@ -31,12 +31,13 @@ RUN cd /root ; \
     rm opencv-${OPENCV_VER}.tgz ; \
     wget -O opencv_contrib-${OPENCV_VER}.tgz https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VER}.tar.gz ; \
     tar xvf opencv_contrib-${OPENCV_VER}.tgz ; \
-    rm opencv_contrib-${OPENCV_VER}.tgz ; \
+    rm opencv_contrib-${OPENCV_VER}.tgz
+RUN cd /root/opencv ; \
     mkdir build && cd build ; \
-    cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules ../opencv-${OPENCV_VER} ; \
+    cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules -DCMAKE_INSTALL_PREFIX=/opt/opencv ../opencv-${OPENCV_VER} ; \
     cmake --build . -j $(nproc) ; \
-    make install ; \
-    rm -rf /root/opencv
+    make install
+RUN rm -rf /root/opencv
 
 
 ##############################
@@ -62,9 +63,13 @@ RUN cargo binstall -y cargo-watch
 ##############################
 FROM rust AS builder
 
-COPY --from=opencv /usr/local/lib64 /usr/local/lib64
+COPY --from=opencv /opt/opencv/bin/* /usr/local/bin/
+COPY --from=opencv /opt/opencv/lib/* /usr/local/lib/
+COPY --from=opencv /opt/opencv/include/opencv4 /usr/include/opencv4
+COPY --from=opencv /opt/opencv/share/opencv4 /usr/share/opencv4
 
-ENV LD_LIBRARY_PATH=/usr/local/lib64
+ENV LD_LIBRARY_PATH=/usr/local/lib
+RUN cp /usr/local/lib/libopencv*.* /usr/lib/
 
 
 ##############################
@@ -72,26 +77,43 @@ ENV LD_LIBRARY_PATH=/usr/local/lib64
 ##############################
 FROM arm64v8/oraclelinux:8 AS runtime
 
-COPY --from=opencv /usr/local/lib64 /usr/local/lib64
+RUN yum install -y fontconfig libjpeg-turbo libwebp libtiff openjpeg2
 
-ENV LD_LIBRARY_PATH=/usr/local/lib64
+COPY --from=opencv /opt/opencv/bin/* /usr/local/bin/
+COPY --from=opencv /opt/opencv/lib/* /usr/local/lib/
+COPY --from=opencv /opt/opencv/include/opencv4 /usr/include/opencv4
+COPY --from=opencv /opt/opencv/share/opencv4 /usr/share/opencv4
 
-RUN yum install -y fontconfig
+ENV LD_LIBRARY_PATH=/usr/local/lib
+RUN cp /usr/local/lib/libopencv*.* /usr/lib/
 
 WORKDIR /app
 
 
 ##############################
-# Test
+# Test - skia
 ##############################
-FROM builder AS test-builder
-# skia-rust
+FROM builder AS test-skia-build
 RUN git clone https://github.com/rust-skia/rust-skia/
-RUN cd rust-skia && cargo build --release
+WORKDIR /rust-skia
+RUN cargo build --release
 ##
-FROM runtime AS test-runtime
-# run
-COPY --from=test-builder /rust-skia/target/release/skia-org /app/skia-org
+FROM runtime AS test-skia-run
+COPY --from=test-skia-build /rust-skia/target/release/skia-org /app/skia-org
 RUN ./skia-org
+
+
+##############################
+# Test - opencv
+##############################
+FROM builder AS test-opencv-build
+RUN git clone https://github.com/twistedfall/opencv-rust
+WORKDIR /opencv-rust
+RUN cargo build --release --examples
+##
+FROM runtime AS test-opencv-run
+COPY --from=test-opencv-build /opencv-rust/target/release/examples/opencl /app/opencl
+COPY --from=test-opencv-build /opencv-rust/tests/blox.jpg /app/blox.jpg
+# RUN ./opencl blox.jpg
 
 
