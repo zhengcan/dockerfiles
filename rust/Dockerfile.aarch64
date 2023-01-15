@@ -48,10 +48,10 @@ FROM base AS rust
 # Rust
 ENV PATH=/root/.cargo/bin:$PATH
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly
-RUN wget https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-aarch64-unknown-linux-musl.tgz \
-    && tar xvf cargo-binstall-aarch64-unknown-linux-musl.tgz \
-    && mv cargo-binstall /root/.cargo/bin \
-    && rm cargo-binstall-aarch64-unknown-linux-musl.tgz
+RUN wget https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-aarch64-unknown-linux-musl.tgz ; \
+    tar xvf cargo-binstall-aarch64-unknown-linux-musl.tgz ; \
+    mv cargo-binstall /root/.cargo/bin ; \
+    rm cargo-binstall-aarch64-unknown-linux-musl.tgz
 RUN cargo binstall -y sccache
 RUN echo '[build]' >> /root/.cargo/config.toml ; \
     echo 'rustc-wrapper = "/root/.cargo/bin/sccache"' >> /root/.cargo/config.toml
@@ -69,7 +69,10 @@ COPY --from=opencv /opt/opencv/include/opencv4 /usr/include/opencv4
 COPY --from=opencv /opt/opencv/share/opencv4 /usr/share/opencv4
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
-RUN cp /usr/local/lib/libopencv*.* /usr/lib/
+RUN cd /usr/local/lib ; \
+    for FILE in $(find . -name "libopencv*.*"); do \
+    ln -s /usr/local/lib/${FILE} /usr/lib/${FILE} ; \
+    done
 
 
 ##############################
@@ -79,15 +82,24 @@ FROM arm64v8/oraclelinux:8 AS runtime
 
 RUN yum install -y fontconfig libjpeg-turbo libwebp libtiff openjpeg2
 
+WORKDIR /app
+
+
+##############################
+# Runtime (OpenCV)
+##############################
+FROM runtime AS runtime-opencv
+
 COPY --from=opencv /opt/opencv/bin/* /usr/local/bin/
 COPY --from=opencv /opt/opencv/lib/* /usr/local/lib/
 COPY --from=opencv /opt/opencv/include/opencv4 /usr/include/opencv4
 COPY --from=opencv /opt/opencv/share/opencv4 /usr/share/opencv4
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
-RUN cp /usr/local/lib/libopencv*.* /usr/lib/
-
-WORKDIR /app
+RUN cd /usr/local/lib ; \
+    for FILE in $(find . -name "libopencv*.*"); do \
+    ln -s /usr/local/lib/${FILE} /usr/lib/${FILE} ; \
+    done
 
 
 ##############################
