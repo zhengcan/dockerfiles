@@ -298,3 +298,4 @@ COPY --from=ffmpeg /build/ffmpeg_build  /usr/local
 ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
+COPY install-deps /usr/bin

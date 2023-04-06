@@ -1,0 +1,14 @@
+#!/bin/bash
+
+DST=$1
+if [[ "$DST" == "" ]]; then
+  echo No dest path
+  exit 1
+fi
+
+mkdir -p $DST
+cp -r /usr/local/bin      $DST
+cp -r /usr/local/include  $DST
+cp -r /usr/local/lib      $DST
+cp -r /usr/local/lib64    $DST
+cp -r /usr/local/share    $DST
