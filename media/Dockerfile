@@ -1,0 +1,300 @@
+####################
+# Buildpack
+ARG BUILD_IMG=tencentos/tencentos_server31
+ARG RUNTIME_IMAGE=tencentos/tencentos_server31
+FROM ${BUILD_IMG} AS base
+
+ENV BASE_DIR=/build
+WORKDIR ${BASE_DIR}
+
+# Deps
+RUN yum install -y make cmake protobuf-compiler autogen m4 autoconf automake libtool git \
+  glibc-devel clang-devel openssl-devel libcurl-devel zlib-devel libzstd-devel expat-devel bzip2-devel
+
+# Git
+ARG GIT_VER=2.37.3
+ARG GIT_LFS_VER=3.2.0-1
+RUN wget https://github.com/git/git/archive/refs/tags/v${GIT_VER}.tar.gz \
+  && tar zxvf v${GIT_VER}.tar.gz && rm v${GIT_VER}.tar.gz \
+  && cd git-${GIT_VER} \
+  && make prefix=/usr -j $(($(nproc) - 2)) \
+  && make prefix=/usr install \
+  && cd .. && rm -rf git-${GIT_VER} \
+  && wget https://packagecloud.io/github/git-lfs/packages/el/8/git-lfs-${GIT_LFS_VER}.x86_64.rpm/download -O git-lfs.rpm \
+  && rpm -i git-lfs.rpm --force \
+  && rm git-lfs.rpm
+
+
+####################
+# OpenCV
+FROM base AS opencv
+
+# Sources
+ARG OPENCV_VER=4.6.0
+RUN wget -q --show-progress -O opencv.tgz https://github.com/opencv/opencv/archive/refs/tags/${OPENCV_VER}.tar.gz \
+  && wget -q --show-progress -O opencv_contrib.tgz https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VER}.tar.gz
+
+# Deps
+RUN yum install -y fontconfig-devel libwebp-devel
+
+# Build
+RUN tar zxvf opencv.tgz && rm opencv.tgz \
+  && tar zxvf opencv_contrib.tgz && rm opencv_contrib.tgz \
+  && mkdir opencv_build && cd opencv_build \
+  && cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules ../opencv-${OPENCV_VER} \
+  && cmake --build . -j $(($(nproc) - 2)) \
+  && make install
+
+
+####################
+# GCC
+FROM base AS gcc
+
+# 工作目录
+ENV SOURCE_DIR=${BASE_DIR}/gcc_sources
+ENV BUILD_DIR=${BASE_DIR}/gcc_build
+WORKDIR ${SOURCE_DIR}
+
+###
+# 拉取依赖库源代码
+# GMP
+ARG GMP_VERSION=6.2.1
+RUN HTML=$(curl -s --progress-bar https://gcc.gnu.org/pub/gcc/infrastructure/) \
+  && GMP_FULL_VERSION=$(echo $HTML | sed -r "s/.*(gmp-(${GMP_VERSION}(\.[0-9]+)*)\.tar\.bz2).*/\2/g") \
+  && wget -q --show-progress https://gcc.gnu.org/pub/gcc/infrastructure/gmp-${GMP_FULL_VERSION}.tar.bz2 \
+  && tar xjvf gmp-${GMP_FULL_VERSION}.tar.bz2 \
+  && rm gmp-${GMP_FULL_VERSION}.tar.bz2
+# MPFR
+ARG MPFR_VERSION=4.1.0
+RUN HTML=$(curl -s --progress-bar https://gcc.gnu.org/pub/gcc/infrastructure/) \
+  && MPFR_FULL_VERSION=$(echo $HTML | sed -r "s/.*(mpfr-(${MPFR_VERSION}(\.[0-9]+)*)\.tar\.bz2).*/\2/g") \
+  && wget -q --show-progress https://gcc.gnu.org/pub/gcc/infrastructure/mpfr-${MPFR_FULL_VERSION}.tar.bz2 \
+  && tar xjvf mpfr-${MPFR_FULL_VERSION}.tar.bz2 \
+  && rm mpfr-${MPFR_FULL_VERSION}.tar.bz2
+# MPC
+ARG MPC_VERSION=1.2.1
+RUN HTML=$(curl -s --progress-bar https://gcc.gnu.org/pub/gcc/infrastructure/) \
+  && MPC_FULL_VERSION=$(echo $HTML | sed -r "s/.*(mpc-(${MPC_VERSION}(\.[0-9]+)*)\.tar\.gz).*/\2/g") \
+  && wget -q --show-progress https://gcc.gnu.org/pub/gcc/infrastructure/mpc-${MPC_FULL_VERSION}.tar.gz \
+  && tar xzvf mpc-${MPC_FULL_VERSION}.tar.gz \
+  && rm mpc-${MPC_FULL_VERSION}.tar.gz
+# isl
+ARG ISL_VERSION=0.24
+RUN HTML=$(curl -s --progress-bar https://gcc.gnu.org/pub/gcc/infrastructure/) \
+  && ISL_FULL_VERSION=$(echo $HTML | sed -r "s/.*(isl-(${ISL_VERSION}(\.[0-9]+)*)\.tar\.bz2).*/\2/g") \
+  && wget -q --show-progress https://gcc.gnu.org/pub/gcc/infrastructure/isl-${ISL_FULL_VERSION}.tar.bz2 \
+  && tar xjvf isl-${ISL_FULL_VERSION}.tar.bz2 \
+  && rm isl-${ISL_FULL_VERSION}.tar.bz2
+# cloog
+ARG CLOOG_VERSION=0.18.1
+RUN HTML=$(curl -s --progress-bar https://gcc.gnu.org/pub/gcc/infrastructure/) \
+  && CLOOG_FULL_VERSION=$(echo $HTML | sed -r "s/.*(cloog-(${CLOOG_VERSION}(\.[0-9]+)*)\.tar\.gz).*/\2/g") \
+  && wget -q --show-progress https://gcc.gnu.org/pub/gcc/infrastructure/cloog-${CLOOG_FULL_VERSION}.tar.gz \
+  && tar xzvf cloog-${CLOOG_FULL_VERSION}.tar.gz \
+  && rm cloog-${CLOOG_FULL_VERSION}.tar.gz
+# zstd
+RUN git clone --depth 1 https://github.com/facebook/zstd
+# GCC
+ARG GCC_VERSION=10.4.0
+RUN HTML=$(curl -s --progress-bar http://mirrors.tencent.com/gnu/gcc/) \
+  && GCC_FULL_VERSION=$(echo $HTML | sed -r "s/.*(gcc-(${GCC_VERSION}(\.[0-9]+)*))\/.*/\2/g") \
+  && wget -q --show-progress http://mirrors.tencent.com/gnu/gcc/gcc-${GCC_FULL_VERSION}/gcc-${GCC_FULL_VERSION}.tar.gz \
+  && tar xzvf gcc-${GCC_FULL_VERSION}.tar.gz \
+  && rm gcc-${GCC_FULL_VERSION}.tar.gz
+
+###
+# 编译代码
+# GMP
+RUN cd gmp-${GMP_VERSION} \
+  && ./configure --disable-shared --enable-static --prefix=$BUILD_DIR \
+  && make -j $(($(nproc) - 2)) && make check && make install \
+  && cd ..
+# MPFR
+RUN cd mpfr-${MPFR_VERSION} \
+  && ./configure --disable-shared --enable-static --prefix=$BUILD_DIR --with-gmp=$BUILD_DIR \
+  && make -j $(($(nproc) - 2)) && make check && make install \
+  && cd ..
+# MPC
+RUN cd mpc-${MPC_VERSION} \
+  && ./configure --disable-shared --enable-static --prefix=$BUILD_DIR --with-gmp=$BUILD_DIR --with-mpfr=$BUILD_DIR \
+  && make -j $(($(nproc) - 2)) && make check && make install \
+  && cd ..
+# isl
+RUN cd isl-${ISL_VERSION} \
+  && ./configure --disable-shared --enable-static --prefix=$BUILD_DIR --with-gmp-prefix=$BUILD_DIR \
+  && make -j $(($(nproc) - 2)) && make check && make install \
+  && cd ..
+# cloog
+RUN cd cloog-${CLOOG_VERSION} \
+  && ./configure --disable-shared --enable-static --prefix=$BUILD_DIR --with-gmp-prefix=$BUILD_DIR \
+  && make -j $(($(nproc) - 2)) && make check && make install \
+  && cd ..
+# zstd
+RUN cd zstd \
+  && make -j $(($(nproc) - 2)) && make check && make install \
+  && cd ..
+# GCC
+RUN cd gcc-${GCC_VERSION} \
+  && ./configure \
+  --enable-languages=c,c++ \
+  --disable-bootstrap \
+  --enable-shared \
+  --enable-threads=posix \
+  --enable-checking=release \
+  --with-system-zlib \
+  --enable-__cxa_atexit \
+  --disable-libunwind-exceptions \
+  --enable-gnu-unique-object \
+  --enable-linker-build-id \
+  --with-linker-hash-style=gnu \
+  --enable-plugin \
+  --enable-initfini-array \
+  --disable-libgcj \
+  --with-cloog=$BUILD_DIR \
+  --enable-gnu-indirect-function \
+  --with-tune=generic \
+  --with-arch_32=x86-64 \
+  --disable-multilib \
+  --prefix=$BUILD_DIR \
+  --enable-lto \
+  --with-gmp=$BUILD_DIR \
+  --with-mpfr=$BUILD_DIR \
+  --with-mpc=$BUILD_DIR \
+  && make -j $(($(nproc) - 2)) && make check && make install \
+  # && rm -rf $BUILD_DIR/bin/x86_64-pc-linux-* \
+  && cd ..
+
+# 复制执行程序
+RUN cp -r $BUILD_DIR/* /usr/local
+
+
+####################
+# FFMpeg
+FROM gcc AS ffmpeg
+
+# 工作目录
+ENV SOURCE_DIR=${BASE_DIR}/ffmpeg_sources
+ENV BUILD_DIR=${BASE_DIR}/ffmpeg_build
+WORKDIR ${SOURCE_DIR}
+
+###
+# Download
+# NASM
+ARG NASM_VERSION=2.16.01
+RUN wget -q --show-progress https://www.nasm.us/pub/nasm/releasebuilds/${NASM_VERSION}/nasm-${NASM_VERSION}.tar.bz2 \
+  && tar xjvf nasm-${NASM_VERSION}.tar.bz2 \
+  && rm nasm-${NASM_VERSION}.tar.bz2
+# YASM
+ARG YASM_VERSION=1.3.0
+RUN wget -q --show-progress https://www.tortall.net/projects/yasm/releases/yasm-${YASM_VERSION}.tar.gz \
+  && tar xzvf yasm-${YASM_VERSION}.tar.gz \
+  && rm yasm-${YASM_VERSION}.tar.gz
+# libx264
+RUN git clone --branch stable --depth 1 https://code.videolan.org/videolan/x264.git
+# libx265
+ARG X265_VERSION=3.5
+RUN git clone --branch stable --depth 2 https://bitbucket.org/multicoreware/x265_git
+# libfdk_aac
+RUN git clone --depth 1 https://github.com/mstorsjo/fdk-aac
+# libmp3lame
+ARG LAME_VERSION=3.100
+RUN wget -q --show-progress https://downloads.sourceforge.net/project/lame/lame/${LAME_VERSION}/lame-${LAME_VERSION}.tar.gz \
+  && tar xzvf lame-${LAME_VERSION}.tar.gz \
+  && rm lame-${LAME_VERSION}.tar.gz
+# libopus
+ARG OPUS_VERSION=1.3.1
+RUN wget -q --show-progress https://archive.mozilla.org/pub/opus/opus-${OPUS_VERSION}.tar.gz \
+  && tar xzvf opus-${OPUS_VERSION}.tar.gz \
+  && rm opus-${OPUS_VERSION}.tar.gz
+# libvpx
+RUN git clone --depth 1 https://chromium.googlesource.com/webm/libvpx.git
+# FFMpeg 6.0
+ARG FFMPEG_VERSION=6.0
+RUN curl -O -L --progress-bar https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.bz2 \
+  && tar xjvf ffmpeg-${FFMPEG_VERSION}.tar.bz2 \
+  && rm ffmpeg-${FFMPEG_VERSION}.tar.bz2
+
+# 构建依赖
+RUN yum install -y autoconf automake bzip2 bzip2-devel cmake freetype-devel libtool make mercurial pkgconfig zlib-devel libzstd
+
+###
+# Compilation & Installation
+# NASM
+RUN cd nasm-* \
+  && ./autogen.sh \
+  && ./configure --prefix="$BUILD_DIR" --bindir="$BUILD_DIR/bin" \
+  && make -j $(($(nproc) - 2)) && make install \
+  && cd ..
+# YASM
+RUN cd yasm-* \
+  && ./configure --prefix="$BUILD_DIR" --bindir="$BUILD_DIR/bin" \
+  && make -j $(($(nproc) - 2)) && make install \
+  && cd ..
+# 复制执行程序
+RUN cp $BUILD_DIR/bin/* /usr/local/bin
+# libx264
+RUN cd x264 \
+  && PKG_CONFIG_PATH="$BUILD_DIR/lib/pkgconfig" ./configure --prefix="$BUILD_DIR" --bindir="$BUILD_DIR/bin" --enable-static --enable-shared \
+  && make -j $(($(nproc) - 2)) && make install \
+  && cd ..
+# libx265
+RUN cd x265_git/build/linux \
+  && cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$BUILD_DIR" -DENABLE_SHARED:bool=on ../../source \
+  && make -j $(($(nproc) - 2)) && make install \
+  && cd ../../..
+# libfdk_aac
+RUN cd fdk-aac \
+  && autoreconf -fiv \
+  && ./configure --prefix="$BUILD_DIR" --enable-shared \
+  && make -j $(($(nproc) - 2)) && make install \
+  && cd ..
+# libmp3lame
+RUN cd lame-* \
+  && ./configure --prefix="$BUILD_DIR" --bindir="$BUILD_DIR/bin" --enable-shared --enable-nasm \
+  && make -j $(($(nproc) - 2)) && make install \
+  && cd ..
+# libopus
+RUN cd opus-* \
+  && ./configure --prefix="$BUILD_DIR" --enable-shared \
+  && make -j $(($(nproc) - 2)) && make install \
+  && cd ..
+# libvpx
+RUN cd libvpx \
+  && ./configure --prefix="$BUILD_DIR" --disable-examples --disable-unit-tests --enable-vp9-highbitdepth --as=yasm --enable-pic --enable-shared \
+  && make -j $(($(nproc) - 2)) && make install \
+  && cd ..
+# FFMpeg 6.0
+RUN cd ffmpeg-* \
+  && PATH="$BUILD_DIR/bin:$PATH" PKG_CONFIG_PATH="$BUILD_DIR/lib/pkgconfig" ./configure \
+  --prefix="$BUILD_DIR" \
+  --pkg-config-flags="--static" \
+  --extra-cflags="-I$BUILD_DIR/include -fPIC" \
+  --extra-ldflags="-L$BUILD_DIR/lib" \
+  --extra-libs="-lpthread -lm -lz" \
+  --bindir="$BUILD_DIR/bin" \
+  --enable-shared \
+  --disable-static \
+  --enable-gpl \
+  --enable-libfdk_aac \
+  --enable-libfreetype \
+  --enable-libmp3lame \
+  --enable-libopus \
+  --enable-libvpx \
+  --enable-libx264 \
+  --enable-libx265 \
+  --enable-nonfree \
+  && make -j $(($(nproc) - 2)) && make install \
+  && cd ..
+
+
+####################
+# Runtime
+FROM ${RUNTIME_IMAGE} AS runtime
+
+RUN yum install -y freetype
+
+COPY --from=opencv /usr/local/lib64     /usr/local/lib64
+COPY --from=ffmpeg /build/ffmpeg_build  /usr/local
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+
