@@ -32,16 +32,21 @@ FROM base AS opencv
 # Sources
 ARG OPENCV_VER=4.6.0
 RUN wget -q --show-progress -O opencv.tgz https://github.com/opencv/opencv/archive/refs/tags/${OPENCV_VER}.tar.gz \
-  && wget -q --show-progress -O opencv_contrib.tgz https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VER}.tar.gz
+  && wget -q --show-progress -O opencv_contrib.tgz https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VER}.tar.gz \
+  && tar zxvf opencv.tgz && rm opencv.tgz \
+  && tar zxvf opencv_contrib.tgz && rm opencv_contrib.tgz
 
 # Deps
 RUN yum install -y fontconfig-devel libwebp-devel
 
 # Build
-RUN tar zxvf opencv.tgz && rm opencv.tgz \
-  && tar zxvf opencv_contrib.tgz && rm opencv_contrib.tgz \
-  && mkdir opencv_build && cd opencv_build \
-  && cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules ../opencv-${OPENCV_VER} \
+RUN mkdir opencv_build && cd opencv_build \
+  && cmake -DCMAKE_BUILD_TYPE=Release \
+    -DOPENCV_GENERATE_PKGCONFIG=YES \
+    # -DOPENCV_PC_FILE_NAME=opencv.pc \
+    # -DOPENCV_CONFIG_INSTALL_PATH=%{_libdir}/cmake/OpenCV \
+    -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules \
+    ../opencv-${OPENCV_VER} \
   && cmake --build . -j $(($(nproc) - 2)) \
   && make install
 
@@ -293,9 +298,9 @@ FROM ${RUNTIME_IMAGE} AS runtime
 
 RUN yum install -y freetype
 
-COPY --from=opencv /usr/local/lib64     /usr/local/lib64
+COPY --from=opencv /usr/local           /usr/local
 COPY --from=ffmpeg /build/ffmpeg_build  /usr/local
 ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
-ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
 
 COPY install-deps /usr/bin
