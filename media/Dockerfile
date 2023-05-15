@@ -55,13 +55,13 @@ RUN mkdir opencv_build && cd opencv_build \
 # GCC
 FROM base AS gcc
 
-# 工作目录
+# Workdir
 ENV SOURCE_DIR=${BASE_DIR}/gcc_sources
 ENV BUILD_DIR=${BASE_DIR}/gcc_build
 WORKDIR ${SOURCE_DIR}
 
 ###
-# 拉取依赖库源代码
+# Fetch dependencies
 # GMP
 ARG GMP_VERSION=6.2.1
 RUN HTML=$(curl -s --progress-bar https://gcc.gnu.org/pub/gcc/infrastructure/) \
@@ -108,7 +108,7 @@ RUN HTML=$(curl -s --progress-bar http://mirrors.tencent.com/gnu/gcc/) \
   && rm gcc-${GCC_FULL_VERSION}.tar.gz
 
 ###
-# 编译代码
+# Compile code
 # GMP
 RUN cd gmp-${GMP_VERSION} \
   && ./configure --disable-shared --enable-static --prefix=$BUILD_DIR \
@@ -169,7 +169,7 @@ RUN cd gcc-${GCC_VERSION} \
   # && rm -rf $BUILD_DIR/bin/x86_64-pc-linux-* \
   && cd ..
 
-# 复制执行程序
+# Copy binary
 RUN cp -r $BUILD_DIR/* /usr/local
 
 
@@ -177,13 +177,13 @@ RUN cp -r $BUILD_DIR/* /usr/local
 # FFMpeg
 FROM gcc AS ffmpeg
 
-# 工作目录
+# Workdir
 ENV SOURCE_DIR=${BASE_DIR}/ffmpeg_sources
 ENV BUILD_DIR=${BASE_DIR}/ffmpeg_build
 WORKDIR ${SOURCE_DIR}
 
 ###
-# Download
+# Fetch dependencies
 # NASM
 ARG NASM_VERSION=2.16.01
 RUN wget -q --show-progress https://www.nasm.us/pub/nasm/releasebuilds/${NASM_VERSION}/nasm-${NASM_VERSION}.tar.bz2 \
@@ -219,7 +219,7 @@ RUN curl -O -L --progress-bar https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSIO
   && tar xjvf ffmpeg-${FFMPEG_VERSION}.tar.bz2 \
   && rm ffmpeg-${FFMPEG_VERSION}.tar.bz2
 
-# 构建依赖
+# Compile dependencies
 RUN yum install -y autoconf automake bzip2 bzip2-devel cmake freetype-devel libtool make mercurial pkgconfig zlib-devel libzstd
 
 ###
@@ -235,7 +235,7 @@ RUN cd yasm-* \
   && ./configure --prefix="$BUILD_DIR" --bindir="$BUILD_DIR/bin" \
   && make -j $(($(nproc) - 2)) && make install \
   && cd ..
-# 复制执行程序
+# Copy binary
 RUN cp $BUILD_DIR/bin/* /usr/local/bin
 # libx264
 RUN cd x264 \
