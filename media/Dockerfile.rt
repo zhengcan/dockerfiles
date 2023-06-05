@@ -1,8 +1,9 @@
+ARG RT_BUILD=tencentos/tencentos_server31
+ARG RT_BASE=tencentos/tencentos_server31
+
 ####################
 # Buildpack
-ARG BUILD_IMG=tencentos/tencentos_server31
-ARG RUNTIME_IMAGE=tencentos/tencentos_server31
-FROM ${BUILD_IMG} AS base
+FROM ${RT_BUILD} AS base
 
 ENV BASE_DIR=/build
 WORKDIR ${BASE_DIR}
@@ -294,7 +295,7 @@ RUN cd ffmpeg-* \
 
 ####################
 # Runtime
-FROM ${RUNTIME_IMAGE} AS runtime
+FROM ${RT_BASE} AS runtime
 
 RUN yum install -y freetype
 
