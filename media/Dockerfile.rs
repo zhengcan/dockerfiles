@@ -16,7 +16,7 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
 ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
 
 # Buildpack
-RUN yum install -y git git-lfs make cmake meson ninja-build nasm expat-devel protobuf-compiler \
+RUN yum install -y git git-lfs make cmake meson ninja-build nasm expat-devel protobuf-devel \
     openssl-devel clang-devel fontconfig-devel glibc-devel libcurl-devel libwebp-devel libatomic \
     && yum clean all
 
