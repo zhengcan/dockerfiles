@@ -353,6 +353,8 @@ RUN rm -rf \
   /usr/local/bin/gcov* \
   /usr/local/bin/lto-dump \
   /usr/local/bin/x86_64-pc-linux-gnu-* \
+  /usr/local/include/c++ \
+  /usr/local/include/clong \
   /usr/local/lib/gcc \
   /usr/local/libexec/gcc
 
