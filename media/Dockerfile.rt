@@ -27,32 +27,6 @@ RUN wget https://github.com/git/git/archive/refs/tags/v${GIT_VER}.tar.gz \
 
 
 ####################
-# OpenCV
-FROM base AS opencv
-
-# Sources
-ARG OPENCV_VER=4.6.0
-RUN wget -q --show-progress -O opencv.tgz https://github.com/opencv/opencv/archive/refs/tags/${OPENCV_VER}.tar.gz \
-  && wget -q --show-progress -O opencv_contrib.tgz https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VER}.tar.gz \
-  && tar zxvf opencv.tgz && rm opencv.tgz \
-  && tar zxvf opencv_contrib.tgz && rm opencv_contrib.tgz
-
-# Deps
-RUN yum install -y fontconfig-devel libwebp-devel
-
-# Build
-RUN mkdir opencv_build && cd opencv_build \
-  && cmake -DCMAKE_BUILD_TYPE=Release \
-    -DOPENCV_GENERATE_PKGCONFIG=YES \
-    # -DOPENCV_PC_FILE_NAME=opencv.pc \
-    # -DOPENCV_CONFIG_INSTALL_PATH=%{_libdir}/cmake/OpenCV \
-    -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules \
-    ../opencv-${OPENCV_VER} \
-  && cmake --build . -j $(($(nproc) - 2)) \
-  && make install
-
-
-####################
 # GCC
 FROM base AS gcc
 
@@ -221,7 +195,7 @@ RUN curl -O -L --progress-bar https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSIO
   && rm ffmpeg-${FFMPEG_VERSION}.tar.bz2
 
 # Compile dependencies
-RUN yum install -y autoconf automake bzip2 bzip2-devel cmake freetype-devel libtool make mercurial pkgconfig zlib-devel libzstd
+RUN yum install -y mercurial pkgconfig
 
 ###
 # Compilation & Installation
@@ -269,10 +243,16 @@ RUN cd libvpx \
   && ./configure --prefix="$BUILD_DIR" --disable-examples --disable-unit-tests --enable-vp9-highbitdepth --as=yasm --enable-pic --enable-shared \
   && make -j $(($(nproc) - 2)) && make install \
   && cd ..
+
+# More dependencies
+RUN yum install -y freetype-devel libjpeg-turbo-devel openjpeg2-devel turbojpeg-devel libwebp-devel fontconfig-devel \
+  frei0r-devel libaom-devel libdav1d-devel snappy-devel libass-devel zimg-devel czmq-devel libxml2-devel \
+  rubberband-devel soxr-devel speex-devel srt-devel svt-av1-devel svt-vp9-devel tesseract-devel libtheora-devel libvmaf-devel libvorbis-devel
 # FFMpeg 6.0
 RUN cd ffmpeg-* \
-  && PATH="$BUILD_DIR/bin:$PATH" PKG_CONFIG_PATH="$BUILD_DIR/lib/pkgconfig" ./configure \
+  && PATH="$BUILD_DIR/bin:$PATH" PKG_CONFIG_PATH="/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig/:$BUILD_DIR/lib/pkgconfig" ./configure \
   --prefix="$BUILD_DIR" \
+  # --prefix="$BUILD_DIR" \
   --pkg-config-flags="--static" \
   --extra-cflags="-I$BUILD_DIR/include -fPIC" \
   --extra-ldflags="-L$BUILD_DIR/lib" \
@@ -280,28 +260,111 @@ RUN cd ffmpeg-* \
   --bindir="$BUILD_DIR/bin" \
   --enable-shared \
   --disable-static \
-  --enable-gpl \
   --enable-libfdk_aac \
-  --enable-libfreetype \
+  --enable-pthreads \
+  --enable-version3 \
+  # --enable-gnutls \
+  --enable-gpl \
+  --enable-libaom \
+  # --enable-libaribb24 \
+  --enable-libdav1d \
   --enable-libmp3lame \
   --enable-libopus \
+  # --enable-librav1e \
+  # --enable-librist \
+  --enable-librubberband \
+  --enable-libsnappy \
+  # --enable-libsrt \
+  # --enable-libsvtav1 \
+  # --enable-libtesseract \
+  --enable-libtheora \
+  # --enable-libvidstab \
+  # --enable-libvmaf \
+  --enable-libvorbis \
   --enable-libvpx \
+  --enable-libwebp \
   --enable-libx264 \
   --enable-libx265 \
+  --enable-libxml2 \
+  # --enable-libxvid \
+  --enable-lzma \
+  --enable-libfontconfig \
+  --enable-libfreetype \
+  --enable-frei0r \
+  --enable-libass \
+  # --enable-libopencore-amrnb \
+  # --enable-libopencore-amrwb \
+  --enable-libopenjpeg \
+  --enable-libspeex \
+  --enable-libsoxr \
+  --enable-libzmq \
+  --enable-libzimg \
   --enable-nonfree \
   && make -j $(($(nproc) - 2)) && make install \
   && cd ..
 
+# FFMpeg runtime env
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
+ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig/:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
+# Copy binary
+RUN cp -r $BUILD_DIR/* /usr/local
+
+
+####################
+# OpenCV
+FROM ffmpeg AS opencv
+
+WORKDIR ${BASE_DIR}
+
+# Sources
+ARG OPENCV_VER=4.7.0
+RUN wget -q --show-progress -O opencv.tgz https://github.com/opencv/opencv/archive/refs/tags/${OPENCV_VER}.tar.gz \
+  && wget -q --show-progress -O opencv_contrib.tgz https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VER}.tar.gz \
+  && tar zxvf opencv.tgz && rm opencv.tgz \
+  && tar zxvf opencv_contrib.tgz && rm opencv_contrib.tgz
+
+# Deps
+# RUN yum install -y fontconfig-devel libwebp-devel
+# gstreamer1-devel gstreamer1-plugins-base-devel gstreamer1-plugins-good
+
+# Build
+RUN mkdir opencv_build && cd opencv_build \
+  && cmake -DCMAKE_BUILD_TYPE=Release \
+    -DOPENCV_GENERATE_PKGCONFIG=YES \
+    # -DOPENCV_PC_FILE_NAME=opencv.pc \
+    # -DOPENCV_CONFIG_INSTALL_PATH=%{_libdir}/cmake/OpenCV \
+    -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules \
+    # -DWITH_GSTREAMER=OFF \
+    -DWITH_FFMPEG=ON \
+    ../opencv-${OPENCV_VER} > ./opencv_cmake \
+  && cmake --build . -j $(($(nproc) - 2)) \
+  && make install
+
 
 ####################
 # Runtime
+FROM opencv AS clean-gcc
+RUN rm -rf \
+  /usr/local/bin/c++ \
+  /usr/local/bin/clong \
+  /usr/local/bin/cpp \
+  /usr/local/bin/g++ \
+  /usr/local/bin/gcc* \
+  /usr/local/bin/gcov* \
+  /usr/local/bin/lto-dump \
+  /usr/local/bin/x86_64-pc-linux-gnu-* \
+  /usr/local/lib/gcc \
+  /usr/local/libexec/gcc
+
+# Export
 FROM ${RT_BASE} AS runtime
 
-RUN yum install -y freetype
-
-COPY --from=opencv /usr/local           /usr/local
-COPY --from=ffmpeg /build/ffmpeg_build  /usr/local
+RUN yum install -y freetype rubberband libass czmq zimg dav1d aom openjpeg2 speex libtheora \
+  soxr frei0r-plugins libxml2 libwebp tesseract \
+  && yum clean all
+COPY --from=clean-gcc  /usr/local  /usr/local
 ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
-ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
+ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
 
+RUN ffmpeg -version && opencv_version
 COPY install-deps /usr/bin

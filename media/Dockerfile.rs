@@ -7,10 +7,13 @@ FROM zhengcan/ffmpeg-opencv-runtime as deps
 ####################
 FROM ${RS_BUILD} as buildpack
 
-COPY --from=deps /usr/local/        /usr/local/
-COPY --from=deps /usr/local/include /usr/include/
+# FFMpeg & OpenCV
+RUN yum install -y freetype rubberband libass czmq zimg dav1d aom openjpeg2 speex libtheora \
+    soxr frei0r-plugins libxml2 libwebp tesseract \
+    && yum clean all
+COPY --from=deps  /usr/local  /usr/local
 ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
-ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
+ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
 
 # Buildpack
 RUN yum install -y git git-lfs make cmake meson ninja-build nasm expat-devel protobuf-compiler \
