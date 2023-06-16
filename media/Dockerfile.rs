@@ -8,8 +8,10 @@ FROM zhengcan/ffmpeg-opencv-runtime as deps
 FROM ${RS_BUILD} as buildpack
 
 # FFMpeg & OpenCV
-RUN yum install -y freetype rubberband libass czmq zimg dav1d aom openjpeg2 speex libtheora \
-    soxr frei0r-plugins libxml2 libwebp tesseract \
+RUN yum install -y freetype-devel libjpeg-turbo-devel openjpeg2-devel turbojpeg-devel libwebp-devel fontconfig-devel \
+    frei0r-devel libaom-devel libdav1d-devel snappy-devel libass-devel zimg-devel czmq-devel libxml2-devel \
+    rubberband-devel soxr-devel speex-devel srt-devel svt-av1-devel svt-vp9-devel tesseract-devel libtheora-devel \
+    libvmaf-devel libvorbis-devel \
     && yum clean all
 COPY --from=deps  /usr/local            /usr/local
 COPY --from=deps  /usr/local/include    /usr/include
@@ -18,7 +20,7 @@ ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib
 
 # Buildpack
 RUN yum install -y git git-lfs make cmake meson ninja-build nasm expat-devel protobuf-devel \
-    openssl-devel clang-devel fontconfig-devel glibc-devel libcurl-devel libwebp-devel libatomic \
+    openssl-devel clang-devel glibc-devel libcurl-devel libatomic \
     && yum clean all
 
 # Rust

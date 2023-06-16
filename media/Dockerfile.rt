@@ -247,7 +247,8 @@ RUN cd libvpx \
 # More dependencies
 RUN yum install -y freetype-devel libjpeg-turbo-devel openjpeg2-devel turbojpeg-devel libwebp-devel fontconfig-devel \
   frei0r-devel libaom-devel libdav1d-devel snappy-devel libass-devel zimg-devel czmq-devel libxml2-devel \
-  rubberband-devel soxr-devel speex-devel srt-devel svt-av1-devel svt-vp9-devel tesseract-devel libtheora-devel libvmaf-devel libvorbis-devel
+  rubberband-devel soxr-devel speex-devel srt-devel svt-av1-devel svt-vp9-devel tesseract-devel libtheora-devel \
+  libvmaf-devel libvorbis-devel
 # FFMpeg 6.0
 RUN cd ffmpeg-* \
   && PATH="$BUILD_DIR/bin:$PATH" PKG_CONFIG_PATH="/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig/:$BUILD_DIR/lib/pkgconfig" ./configure \
