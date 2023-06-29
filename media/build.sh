@@ -30,6 +30,10 @@ docker build \
   .
 r=$? && if [ $r != 0 ]; then exit $r; fi
 
-docker push zhengcan/ffmpeg-opencv-runtime
-docker push mirrors.tencent.com/tacc/ffmpeg-opencv-runtime
-docker push zhengcan/ffmpeg-opencv-rust
+# Push
+if [[ "$PUSH" != "n" ]] | [[ "$PUSH" != "N" ]]; then
+  docker push zhengcan/ffmpeg-opencv-runtime
+  docker push mirrors.tencent.com/tacc/ffmpeg-opencv-runtime
+  docker push zhengcan/ffmpeg-opencv-rust
+fi
+

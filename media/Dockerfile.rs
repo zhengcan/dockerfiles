@@ -26,11 +26,12 @@ RUN yum install -y git git-lfs make cmake meson ninja-build nasm expat-devel pro
 
 # Rust
 ENV PATH=/root/.cargo/bin:$PATH
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly
-RUN cargo --version
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN rustup install nightly
+RUN rustup check && cargo --version
 
 # sccache
-ARG SCCACHE_VER=0.5.3
+ARG SCCACHE_VER=0.5.4
 RUN wget https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VER}/sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
     && tar zxvf sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
     && mv sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl/sccache /usr/bin \
