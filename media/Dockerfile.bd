@@ -8,21 +8,21 @@ ENV BASE_DIR=/build
 WORKDIR ${BASE_DIR}
 
 # Deps
-RUN yum install -y make cmake protobuf-compiler autogen m4 autoconf automake libtool git \
+RUN yum install -y make cmake protobuf-compiler autogen m4 autoconf automake libtool git git-lfs \
   glibc-devel clang-devel openssl-devel libcurl-devel zlib-devel libzstd-devel expat-devel bzip2-devel
 
-# Git
-ARG GIT_VER=2.37.3
-ARG GIT_LFS_VER=3.2.0-1
-RUN wget https://github.com/git/git/archive/refs/tags/v${GIT_VER}.tar.gz \
-  && tar zxvf v${GIT_VER}.tar.gz && rm v${GIT_VER}.tar.gz \
-  && cd git-${GIT_VER} \
-  && make prefix=/usr -j $(($(nproc) - 2)) \
-  && make prefix=/usr install \
-  && cd .. && rm -rf git-${GIT_VER} \
-  && wget https://packagecloud.io/github/git-lfs/packages/el/8/git-lfs-${GIT_LFS_VER}.x86_64.rpm/download -O git-lfs.rpm \
-  && rpm -i git-lfs.rpm --force \
-  && rm git-lfs.rpm
+# # Git
+# ARG GIT_VER=2.37.3
+# ARG GIT_LFS_VER=3.2.0-1
+# RUN wget https://github.com/git/git/archive/refs/tags/v${GIT_VER}.tar.gz \
+#   && tar zxvf v${GIT_VER}.tar.gz && rm v${GIT_VER}.tar.gz \
+#   && cd git-${GIT_VER} \
+#   && make prefix=/usr -j $(($(nproc) - 2)) \
+#   && make prefix=/usr install \
+#   && cd .. && rm -rf git-${GIT_VER} \
+#   && wget https://packagecloud.io/github/git-lfs/packages/el/8/git-lfs-${GIT_LFS_VER}.x86_64.rpm/download -O git-lfs.rpm \
+#   && rpm -i git-lfs.rpm --force \
+#   && rm git-lfs.rpm
 
 
 ####################
@@ -165,7 +165,7 @@ RUN wget -q --show-progress https://www.nasm.us/pub/nasm/releasebuilds/${NASM_VE
   && rm nasm-${NASM_VERSION}.tar.bz2
 # YASM
 ARG YASM_VERSION=1.3.0
-RUN wget -q --show-progress https://www.tortall.net/projects/yasm/releases/yasm-${YASM_VERSION}.tar.gz \
+RUN wget -q --show-progress https://github.com/yasm/yasm/releases/download/v${YASM_VERSION}/yasm-${YASM_VERSION}.tar.gz \
   && tar xzvf yasm-${YASM_VERSION}.tar.gz \
   && rm yasm-${YASM_VERSION}.tar.gz
 # libx264
