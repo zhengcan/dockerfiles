@@ -42,5 +42,5 @@ RUN echo '[build]' >> /root/.cargo/config.toml \
 
 # Scripts
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
-ENTRYPOINT [ "/root/.cargo/bin/cargo" ]
+# ENTRYPOINT [ "/root/.cargo/bin/cargo" ]
 
