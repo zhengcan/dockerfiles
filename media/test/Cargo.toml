@@ -1,0 +1,9 @@
+[package]
+name = "test"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+opencv = { version = "0.82", features = ["clang-runtime"] }
+magick_rust = { version = "0.18" }
+ffmpeg-next = { version = "6.0" }

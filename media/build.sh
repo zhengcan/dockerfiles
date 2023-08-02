@@ -38,6 +38,9 @@ docker build \
   .
 r=$? && if [ $r != 0 ]; then exit $r; fi
 
+# test with Rust
+docker run --rm -it -v `pwd`/test:/test -w /test ${RUST_IMG} run 
+
 # Push
 if [[ "$PUSH" != "n" ]] && [[ "$PUSH" != "N" ]]; then
   docker push ${STANDARD_IMG}

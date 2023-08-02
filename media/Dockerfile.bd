@@ -11,19 +11,6 @@ WORKDIR ${BASE_DIR}
 RUN yum install -y make cmake protobuf-compiler autogen m4 autoconf automake libtool git git-lfs \
   glibc-devel clang-devel openssl-devel libcurl-devel zlib-devel libzstd-devel expat-devel bzip2-devel
 
-# # Git
-# ARG GIT_VER=2.37.3
-# ARG GIT_LFS_VER=3.2.0-1
-# RUN wget https://github.com/git/git/archive/refs/tags/v${GIT_VER}.tar.gz \
-#   && tar zxvf v${GIT_VER}.tar.gz && rm v${GIT_VER}.tar.gz \
-#   && cd git-${GIT_VER} \
-#   && make prefix=/usr -j $(($(nproc) - 2)) \
-#   && make prefix=/usr install \
-#   && cd .. && rm -rf git-${GIT_VER} \
-#   && wget https://packagecloud.io/github/git-lfs/packages/el/8/git-lfs-${GIT_LFS_VER}.x86_64.rpm/download -O git-lfs.rpm \
-#   && rpm -i git-lfs.rpm --force \
-#   && rm git-lfs.rpm
-
 
 ####################
 # GCC
@@ -149,7 +136,7 @@ RUN cp -r $BUILD_DIR/* /usr/local
 
 ####################
 # FFMpeg
-FROM gcc AS ffmpeg
+FROM base AS ffmpeg
 
 # Workdir
 ENV SOURCE_DIR=${BASE_DIR}/ffmpeg_sources
@@ -339,4 +326,24 @@ RUN mkdir opencv_build && cd opencv_build \
     ../opencv-${OPENCV_VER} > ./opencv_cmake \
   && cmake --build . -j $(($(nproc) - 2)) \
   && make install
+
+
+####################
+# ImageMagick
+FROM opencv AS imagemagick
+
+WORKDIR ${BASE_DIR}
+
+# Sources
+ARG MAGICK_VER=7.1.1-15
+RUN wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${MAGICK_VER}.tar.gz \
+  && tar xzvf ${MAGICK_VER}.tar.gz \
+  && rm ${MAGICK_VER}.tar.gz
+
+# Build
+RUN cd ImageMagick-${MAGICK_VER} \
+  && ./configure --with-magick-plus-plus=no --with-perl=no \
+  && make -j $(($(nproc) - 2)) \
+  && make install
+
 

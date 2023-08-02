@@ -5,19 +5,19 @@ ARG TACC_BASE=mirrors.tencent.com/tlinux/tlinux3.2:latest
 ####################
 # Standard Runtime
 FROM ${BUILDER_IMG} AS clean-gcc
-RUN rm -rf \
-  /usr/local/bin/c++ \
-  /usr/local/bin/clong \
-  /usr/local/bin/cpp \
-  /usr/local/bin/g++ \
-  /usr/local/bin/gcc* \
-  /usr/local/bin/gcov* \
-  /usr/local/bin/lto-dump \
-  /usr/local/bin/x86_64-pc-linux-gnu-* \
-  /usr/local/include/c++ \
-  /usr/local/include/clong \
-  /usr/local/lib/gcc \
-  /usr/local/libexec/gcc
+# RUN rm -rf \
+#   /usr/local/bin/c++ \
+#   /usr/local/bin/clong \
+#   /usr/local/bin/cpp \
+#   /usr/local/bin/g++ \
+#   /usr/local/bin/gcc* \
+#   /usr/local/bin/gcov* \
+#   /usr/local/bin/lto-dump \
+#   /usr/local/bin/x86_64-pc-linux-gnu-* \
+#   /usr/local/include/c++ \
+#   /usr/local/include/clong \
+#   /usr/local/lib/gcc \
+#   /usr/local/libexec/gcc
 
 # Export
 FROM ${STANDARD_BASE} AS standard
@@ -29,7 +29,7 @@ COPY --from=clean-gcc  /usr/local  /usr/local
 ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
 ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
 
-RUN ffmpeg -version && opencv_version
+RUN ffmpeg -version && opencv_version && magick --version
 COPY install-deps /usr/bin
 
 
