@@ -335,7 +335,7 @@ FROM opencv AS imagemagick
 WORKDIR ${BASE_DIR}
 
 # Sources
-ARG MAGICK_VER=7.1.1-15
+ARG MAGICK_VER=7.1.1-21
 RUN wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${MAGICK_VER}.tar.gz \
   && tar xzvf ${MAGICK_VER}.tar.gz \
   && rm ${MAGICK_VER}.tar.gz

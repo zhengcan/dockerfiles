@@ -46,9 +46,9 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
 ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
 
 # System & Utilities
-ARG BAT_VER=0.23.0
-ARG BANDWHICH_VER=0.20.0
-ARG BTM_VER=0.8.0
+ARG BAT_VER=0.24.0
+ARG BANDWHICH_VER=0.21.1
+ARG BTM_VER=0.9.6
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN yum install -y fontconfig wget curl procps crontabs net-tools bind-utils findutils tar \
     which ncurses python2 telnet psmisc htop iftop less vim openssl \

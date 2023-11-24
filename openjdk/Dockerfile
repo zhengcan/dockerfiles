@@ -1,6 +1,6 @@
 ####################
 # deps
-FROM --platform=amd64 openjdk:11-slim-buster as openjdk
+FROM --platform=amd64 openjdk:11-slim-bullseye as openjdk
 FROM --platform=amd64 dragonwell-registry.cn-hangzhou.cr.aliyuncs.com/dragonwell/dragonwell:11-extended-ga-ubuntu as dragonwell
 
 FROM --platform=amd64 debian:bullseye-slim as select-jdk
@@ -35,14 +35,15 @@ FROM --platform=amd64 essential as builder
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     build-essential bzip2 ca-certificates docker.io git gnupg \
-    libmysql++-dev libssl-dev lsb-release pkg-config protobuf-compiler unzip zip \
+    libmysql++-dev libssl-dev lsb-release pkg-config protobuf-compiler unzip zip wget \
   && apt-get clean
 
 # SDK Man & Sbt
 ENV SDKMAN_DIR=/usr/local/sdkman
 ENV SBT_VER=1.6.2
-RUN curl -s get.sdkman.io | bash
+RUN curl -s "https://get.sdkman.io" | bash
 RUN . "/root/.bashrc" \
+  && mkdir -p $SDKMAN_DIR/etc \
   && echo "sdkman_auto_answer=true" > $SDKMAN_DIR/etc/config \
   && echo "sdkman_auto_selfupdate=false" >> $SDKMAN_DIR/etc/config \
   && echo "sdkman_insecure_ssl=false" >> $SDKMAN_DIR/etc/config \
@@ -52,7 +53,7 @@ RUN . "/root/.bashrc" \
   && ln -s /opt/sbt/bin/sbt                     /usr/bin/sbt
 
 # FNM, Node, Yarn, PNPM
-ENV NODE_VER=18.12.1
+ENV NODE_VER=18.18.2
 ENV PATH=$PATH:/opt/node/bin
 RUN cd /opt \
   && curl -fLO https://nodejs.org/dist/v${NODE_VER}/node-v${NODE_VER}-linux-x64.tar.xz \
@@ -74,11 +75,17 @@ RUN npm config list \
 
 # Rust
 ENV PATH=/root/.cargo/bin:$PATH
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly \
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable \
   && cargo --version
-RUN cargo install sccache \
-  && echo '[build]' >> /root/.cargo/config.toml \
-  && echo 'rustc-wrapper = "/root/.cargo/bin/sccache"' >> /root/.cargo/config.toml
+# sccache
+ARG SCCACHE_VER=0.7.3
+RUN wget https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VER}/sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
+    && tar zxvf sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
+    && mv sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl/sccache /usr/bin \
+    && rm -rf sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
+    && rm -rf sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl
+RUN echo '[build]' >> /root/.cargo/config.toml \
+    && echo 'rustc-wrapper = "/usr/bin/sccache"' >> /root/.cargo/config.toml
 
 
 ####################
