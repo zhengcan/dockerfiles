@@ -53,7 +53,7 @@ RUN . "/root/.bashrc" \
   && ln -s /opt/sbt/bin/sbt                     /usr/bin/sbt
 
 # FNM, Node, Yarn, PNPM
-ENV NODE_VER=18.18.2
+ENV NODE_VER=20.11.0
 ENV PATH=$PATH:/opt/node/bin
 RUN cd /opt \
   && curl -fLO https://nodejs.org/dist/v${NODE_VER}/node-v${NODE_VER}-linux-x64.tar.xz \
@@ -78,7 +78,7 @@ ENV PATH=/root/.cargo/bin:$PATH
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable \
   && cargo --version
 # sccache
-ARG SCCACHE_VER=0.7.3
+ARG SCCACHE_VER=0.7.5
 RUN wget https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VER}/sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
     && tar zxvf sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
     && mv sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl/sccache /usr/bin \
