@@ -73,6 +73,11 @@ RUN npm config list \
   && yarn config list \
   && pnpm config list
 
+# Bun
+ENV PATH=$PATH:/root/.bun/bin
+RUN curl -fsSL https://bun.sh/install | bash
+RUN bun --help
+
 # Rust
 ENV PATH=/root/.cargo/bin:$PATH
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable \
