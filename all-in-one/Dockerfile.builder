@@ -116,4 +116,4 @@ COPY --from=malloc /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.9 /usr/l
 RUN ln -s libtcmalloc_minimal.so.4                                        /usr/local/lib/libtcmalloc_minimal.so \
   && ln -s libtcmalloc_minimal.so.4                                       /usr/local/lib/libtcmalloc.so
 
-RUN apt install -y docker.io
+RUN apt install -y docker docker-buildx
