@@ -115,3 +115,5 @@ RUN ln -s libjemalloc.so.2                          /usr/local/lib/libjemalloc.s
 COPY --from=malloc /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.9 /usr/local/lib/libtcmalloc_minimal.so.4
 RUN ln -s libtcmalloc_minimal.so.4                                        /usr/local/lib/libtcmalloc_minimal.so \
   && ln -s libtcmalloc_minimal.so.4                                       /usr/local/lib/libtcmalloc.so
+
+RUN apt install -y docker.io
