@@ -1,59 +1,44 @@
 ####################
-# deps
-FROM --platform=amd64 openjdk:11-slim-bullseye as openjdk
-FROM --platform=amd64 dragonwell-registry.cn-hangzhou.cr.aliyuncs.com/dragonwell/dragonwell:11-extended-ga-ubuntu as dragonwell
-
-FROM --platform=amd64 debian:bullseye-slim as select-jdk
-COPY --from=openjdk /usr/local/openjdk-11 /opt/java/openjdk
-COPY --from=dragonwell /opt/java/openjdk /opt/java/dragonwell
-
-ARG JDK=openjdk
-RUN mv /opt/java/${JDK} /opt/java/jdk
+# Prepare
+FROM zhengcan/dev:media AS media
+FROM --platform=amd64 eclipse-temurin:17-jdk AS openjdk
 
 
 ####################
-# essential
-FROM --platform=amd64 debian:bullseye-slim as essential
+# Base
+FROM media AS base
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends binutils curl htop procps vim libmysql++3v5 \
-  && rm -rf /var/lib/apt/lists/* \
-  && rm /bin/sh && ln -s /bin/bash /bin/sh
-
-COPY --from=select-jdk /opt/java/jdk /opt/java/jdk
-
-ENV JAVA_HOME=/opt/java/jdk \
-  PATH="/opt/java/jdk/bin:$PATH"
-
-CMD ["/bin/bash"]
+RUN apt update && \
+  apt install -y build-essential libmysql++-dev libssl-dev lsb-release protobuf-compiler git git-lfs zip xz-utils curl wget vim
 
 
 ####################
-# builder
-FROM --platform=amd64 essential as builder
-
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-  build-essential bzip2 ca-certificates docker.io git gnupg \
-  libmysql++-dev libssl-dev lsb-release pkg-config protobuf-compiler unzip zip wget \
-  && apt-get clean
+# Java
+FROM base AS builder
+COPY --from=openjdk /opt/java/openjdk /opt/java/openjdk
+ENV PATH=$PATH:/opt/java/openjdk/bin
 
 # SDK Man & Sbt
 ENV SDKMAN_DIR=/usr/local/sdkman
 ENV SBT_VER=1.6.2
 RUN curl -s "https://get.sdkman.io" | bash
-RUN . "/root/.bashrc" \
-  && mkdir -p $SDKMAN_DIR/etc \
+RUN mkdir -p $SDKMAN_DIR/etc \
   && echo "sdkman_auto_answer=true" > $SDKMAN_DIR/etc/config \
   && echo "sdkman_auto_selfupdate=false" >> $SDKMAN_DIR/etc/config \
   && echo "sdkman_insecure_ssl=false" >> $SDKMAN_DIR/etc/config \
   && echo "sdkman_debug_mode=false" >> $SDKMAN_DIR/etc/config \
-  && sdk install sbt $SBT_VER \
+  && echo "#!/bin/bash" > $SDKMAN_DIR/install \
+  && echo "source \"$SDKMAN_DIR/bin/sdkman-init.sh\"" >> $SDKMAN_DIR/install \
+  && echo "sdk install sbt $SBT_VER" >> $SDKMAN_DIR/install \
+  && chmod +x $SDKMAN_DIR/install \
+  && $SDKMAN_DIR/install \
   && ln -s $SDKMAN_DIR/candidates/sbt/current/  /opt/sbt \
   && ln -s /opt/sbt/bin/sbt                     /usr/bin/sbt
 
-# FNM, Node, Yarn, PNPM
-ENV NODE_VER=20.11.0
+
+####################
+# Node
+ENV NODE_VER=20.13.0
 ENV PATH=$PATH:/opt/node/bin
 RUN cd /opt \
   && curl -fLO https://nodejs.org/dist/v${NODE_VER}/node-v${NODE_VER}-linux-x64.tar.xz \
@@ -64,6 +49,8 @@ RUN cd /opt \
   && ln -s /opt/node/bin/node /usr/bin/node \
   && ln -s /opt/node/bin/npm /usr/bin/npm \
   && ln -s /opt/node/bin/npx /usr/bin/npx
+
+# NPM, Yarn, PNPM
 RUN npm install -g npm pnpm yarn \
   && ln -s /opt/node/bin/pnpm /usr/bin/pnpm \
   && ln -s /opt/node/bin/pnpx /usr/bin/pnpx \
@@ -76,14 +63,17 @@ RUN npm config list \
 # Bun
 ENV PATH=$PATH:/root/.bun/bin
 RUN curl -fsSL https://bun.sh/install | bash
-RUN bun --help
+RUN bun --revision
 
+
+####################
 # Rust
-ENV PATH=/root/.cargo/bin:$PATH
+ENV PATH=$PATH:/root/.cargo/bin
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable \
   && cargo --version
+
 # sccache
-ARG SCCACHE_VER=0.7.5
+ARG SCCACHE_VER=0.8.0
 RUN wget https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VER}/sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
   && tar zxvf sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
   && mv sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl/sccache /usr/bin \
@@ -95,7 +85,7 @@ RUN echo '[build]' >> /root/.cargo/config.toml \
 
 ####################
 # jemalloc & tcmalloc
-FROM --platform=amd64 builder as malloc
+FROM base as malloc
 
 ENV JEMALLOC_VER=5.3.0
 RUN mkdir -p /jemalloc \
@@ -105,23 +95,23 @@ RUN mkdir -p /jemalloc \
   && cd jemalloc-${JEMALLOC_VER} \
   && ./configure \
   && make -j $(($(nproc) - 2)) \
-  && rm -rf /usr/local \
-  && mkdir -p /usr/local \
   && make install
 
-RUN apt update \
-  && apt install libtcmalloc-minimal4 \
-  && mv /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so.4 \
-  && ln -s /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so \
-  && ln -s /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc.so
+RUN apt update && apt install libtcmalloc-minimal4
 
 
 ####################
-# runtime
-FROM --platform=amd64 essential as runtime
+# Final
+FROM builder as final
 
 ENV JEMALLOC_SO=/usr/local/lib/libjemalloc.so
 ENV TCMALLOC_SO=/usr/local/lib/libtcmalloc.so
 
-COPY --from=malloc /usr/local /usr/local
+COPY --from=malloc /usr/local/lib/libjemalloc.a     /usr/local/lib/libjemalloc.a
+COPY --from=malloc /usr/local/lib/libjemalloc.so.2  /usr/local/lib/libjemalloc.so.2
+COPY --from=malloc /usr/local/lib/libjemalloc_pic.a /usr/local/lib/libjemalloc_pic.a
+RUN ln -s libjemalloc.so.2                          /usr/local/lib/libjemalloc.so
 
+COPY --from=malloc /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.9 /usr/local/lib/libtcmalloc_minimal.so.4
+RUN ln -s libtcmalloc_minimal.so.4                                        /usr/local/lib/libtcmalloc_minimal.so \
+  && ln -s libtcmalloc_minimal.so.4                                       /usr/local/lib/libtcmalloc.so

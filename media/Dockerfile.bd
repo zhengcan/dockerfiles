@@ -174,8 +174,8 @@ RUN wget -q --show-progress https://archive.mozilla.org/pub/opus/opus-${OPUS_VER
   && rm opus-${OPUS_VERSION}.tar.gz
 # libvpx
 RUN git clone --depth 1 https://chromium.googlesource.com/webm/libvpx.git
-# FFMpeg 6.1.1
-ARG FFMPEG_VERSION=6.1.1
+# FFMpeg
+ARG FFMPEG_VERSION=7.0
 RUN curl -O -L --progress-bar https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.bz2 \
   && tar xjvf ffmpeg-${FFMPEG_VERSION}.tar.bz2 \
   && rm ffmpeg-${FFMPEG_VERSION}.tar.bz2
@@ -317,13 +317,13 @@ RUN wget -q --show-progress -O opencv.tgz https://github.com/opencv/opencv/archi
 # Build
 RUN mkdir opencv_build && cd opencv_build \
   && cmake -DCMAKE_BUILD_TYPE=Release \
-    -DOPENCV_GENERATE_PKGCONFIG=YES \
-    # -DOPENCV_PC_FILE_NAME=opencv.pc \
-    # -DOPENCV_CONFIG_INSTALL_PATH=%{_libdir}/cmake/OpenCV \
-    -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules \
-    # -DWITH_GSTREAMER=OFF \
-    -DWITH_FFMPEG=ON \
-    ../opencv-${OPENCV_VER} > ./opencv_cmake \
+  -DOPENCV_GENERATE_PKGCONFIG=YES \
+  # -DOPENCV_PC_FILE_NAME=opencv.pc \
+  # -DOPENCV_CONFIG_INSTALL_PATH=%{_libdir}/cmake/OpenCV \
+  -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules \
+  # -DWITH_GSTREAMER=OFF \
+  -DWITH_FFMPEG=ON \
+  ../opencv-${OPENCV_VER} > ./opencv_cmake \
   && cmake --build . -j $(($(nproc) - 2)) \
   && make install
 

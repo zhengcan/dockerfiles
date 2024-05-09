@@ -1,0 +1,167 @@
+FROM --platform=amd64 ubuntu:jammy AS base
+
+
+####################
+# buildpack
+FROM base AS buildpack
+
+RUN apt update
+RUN apt install -y build-essential nasm yasm cmake autoconf libtool pkg-config curl wget
+
+ENV BASE_DIR=/root
+WORKDIR ${BASE_DIR}
+
+
+####################
+# FFMpeg
+FROM buildpack AS ffmpeg
+
+# Workdir
+ENV SOURCE_DIR=${BASE_DIR}/ffmpeg_sources
+ENV BUILD_DIR=/usr/local
+WORKDIR ${SOURCE_DIR}
+
+# Source
+ARG FFMPEG_VER=7.0
+RUN curl -O -L --progress-bar https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VER}.tar.bz2 \
+  && tar xjvf ffmpeg-${FFMPEG_VER}.tar.bz2 \
+  && rm ffmpeg-${FFMPEG_VER}.tar.bz2
+
+# More dependencies
+# RUN yum install -y freetype-devel libjpeg-turbo-devel openjpeg2-devel turbojpeg-devel libwebp-devel fontconfig-devel \
+#   frei0r-devel libaom-devel libdav1d-devel snappy-devel libass-devel zimg-devel czmq-devel libxml2-devel \
+#   rubberband-devel soxr-devel speex-devel srt-devel svt-av1-devel svt-vp9-devel tesseract-devel libtheora-devel \
+#   libvmaf-devel libvorbis-devel
+RUN apt install -y libx264-dev libx265-dev frei0r-plugins-dev libaom-dev libass-dev libdav1d-dev libopenjp2-7-dev librubberband-dev \
+  libsnappy-dev libsoxr-dev libspeex-dev libtheora-dev libvorbis-dev libwebp-dev libzimg-dev libfdk-aac-dev libmp3lame-dev libopus-dev \
+  libvpx-dev libzmq3-dev libxmlb-dev libsvtav1-dev libsvtav1enc-dev libsvtav1dec-dev libnuma-dev libxvidcore-dev libvidstab-dev libaribb24-dev
+
+# Build
+RUN cd ffmpeg-${FFMPEG_VER} \
+  && ./configure \
+  --prefix="$BUILD_DIR" \
+  --pkg-config-flags="--static" \
+  --extra-cflags="-I$BUILD_DIR/include -fPIC" \
+  --extra-ldflags="-L$BUILD_DIR/lib" \
+  --extra-libs="-lpthread -lm -lz" \
+  --bindir="$BUILD_DIR/bin" \
+  --enable-shared \
+  --disable-static \
+  --enable-libfdk_aac \
+  --enable-pthreads \
+  --enable-version3 \
+  # --enable-gnutls \
+  --enable-gpl \
+  --enable-libaom \
+  --enable-libaribb24 \
+  --enable-libdav1d \
+  --enable-libmp3lame \
+  --enable-libopus \
+  # --enable-librav1e \
+  # --enable-librist \
+  --enable-librubberband \
+  --enable-libsnappy \
+  # --enable-libsrt \
+  --enable-libsvtav1 \
+  # --enable-libtesseract \
+  --enable-libtheora \
+  --enable-libvidstab \
+  # --enable-libvmaf \
+  --enable-libvorbis \
+  --enable-libvpx \
+  --enable-libwebp \
+  --enable-libx264 \
+  --enable-libx265 \
+  --enable-libxml2 \
+  --enable-libxvid \
+  --enable-lzma \
+  --enable-libfontconfig \
+  --enable-libfreetype \
+  --enable-frei0r \
+  --enable-libass \
+  # --enable-libopencore-amrnb \
+  # --enable-libopencore-amrwb \
+  --enable-libopenjpeg \
+  --enable-libspeex \
+  --enable-libsoxr \
+  # --enable-libzmq \
+  --enable-libzimg \
+  --enable-nonfree \
+  && make -j $(($(nproc) - 2)) && make install \
+  && cd ..
+
+# FFMpeg runtime env
+ENV LD_LIBRARY_PATH=/usr/local/lib
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+# Copy binary
+# RUN cp -r $BUILD_DIR/* /usr/local
+
+
+####################
+# OpenCV
+FROM ffmpeg AS opencv
+
+WORKDIR ${BASE_DIR}
+
+# Source
+ARG OPENCV_VER=4.9.0
+RUN wget -q --show-progress -O opencv.tgz https://github.com/opencv/opencv/archive/refs/tags/${OPENCV_VER}.tar.gz \
+  && wget -q --show-progress -O opencv_contrib.tgz https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VER}.tar.gz \
+  && tar zxvf opencv.tgz && rm opencv.tgz \
+  && tar zxvf opencv_contrib.tgz && rm opencv_contrib.tgz
+
+# Deps
+# RUN yum install -y fontconfig-devel libwebp-devel
+# gstreamer1-devel gstreamer1-plugins-base-devel gstreamer1-plugins-good
+
+# Build
+RUN mkdir opencv_build && cd opencv_build \
+  && cmake -DCMAKE_BUILD_TYPE=Release \
+  -DOPENCV_GENERATE_PKGCONFIG=YES \
+  # -DOPENCV_PC_FILE_NAME=opencv.pc \
+  # -DOPENCV_CONFIG_INSTALL_PATH=%{_libdir}/cmake/OpenCV \
+  -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules \
+  # -DWITH_GSTREAMER=OFF \
+  -DWITH_FFMPEG=ON \
+  ../opencv-${OPENCV_VER} > ./opencv_cmake \
+  && cmake --build . -j $(($(nproc) - 2)) \
+  && make install
+
+
+####################
+# ImageMagick
+FROM opencv AS imagemagick
+
+WORKDIR ${BASE_DIR}
+
+# Source
+ARG MAGICK_VER=7.1.1-32
+RUN wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${MAGICK_VER}.tar.gz \
+  && tar xzvf ${MAGICK_VER}.tar.gz \
+  && rm ${MAGICK_VER}.tar.gz
+
+# Build
+RUN cd ImageMagick-${MAGICK_VER} \
+  && ./configure --with-magick-plus-plus=no --with-perl=no \
+  && make -j $(($(nproc) - 2)) \
+  && make install
+
+
+####################
+# Runtime
+FROM base AS runtime
+
+COPY --from=imagemagick /usr/local/bin /usr/local/bin
+COPY --from=imagemagick /usr/local/etc /usr/local/etc
+COPY --from=imagemagick /usr/local/include /usr/local/include
+COPY --from=imagemagick /usr/local/lib /usr/local/lib
+COPY --from=imagemagick /usr/local/share /usr/local/share
+
+ENV LD_LIBRARY_PATH=/usr/local/lib
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+
+RUN apt update \
+  && apt install -y zip xz-utils \
+  && apt install -y pkg-config librubberband2 libass9 libvidstab1.1 libzimg2 libvpx7 libwebp7 libwebpmux3 libwebpdemux2 libaribb24-0 \
+  libdav1d5 libsnappy1v5 libaom3 libfdk-aac2 libmp3lame0 libopenjp2-7 libopus0 libspeex1 libsvtav1enc0 libtheora0 libvorbis0a libvorbisenc2 \
+  libx264-163 libx265-199 libxvidcore4 libsoxr0
