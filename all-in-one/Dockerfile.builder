@@ -82,6 +82,9 @@ RUN wget https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VER}/sc
 RUN echo '[build]' >> /root/.cargo/config.toml \
   && echo 'rustc-wrapper = "/usr/bin/sccache"' >> /root/.cargo/config.toml
 
+# binstall & watch
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+RUN cargo binstall -y cargo-watch cargo-release
 
 ####################
 # jemalloc & tcmalloc
