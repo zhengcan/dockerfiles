@@ -47,7 +47,7 @@ RUN /usr/local/install-utils
 
 ####################
 # Java
-FROM --platform=amd64 eclipse-temurin:${JDK_TAG} AS java
+FROM eclipse-temurin:${JDK_TAG} AS java
 
 WORKDIR /app
 
