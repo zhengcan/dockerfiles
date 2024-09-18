@@ -167,6 +167,6 @@ ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
 RUN apt update \
   && apt install -y zip xz-utils \
-  && apt install -y pkg-config librubberband2 libass9 libvidstab1.1 libzimg2 libvpx7 libwebp7 libwebpmux3 libwebpdemux2 libaribb24-0 \
-  libdav1d5 libsnappy1v5 libaom3 libfdk-aac2 libmp3lame0 libopenjp2-7 libopus0 libspeex1 libsvtav1enc1d1 libtheora0 libvorbis0a libvorbisenc2 \
-  libx264-163 libx265-199 libxvidcore4 libsoxr0
+  && apt install -y pkg-config librubberband2 libass9 libvidstab1.1 libzimg2 libvpx9 libwebp7 libwebpmux3 libwebpdemux2 libaribb24-0 \
+  libdav1d7 libsnappy1v5 libaom3 libfdk-aac2 libmp3lame0 libopenjp2-7 libopus0 libspeex1 libsvtav1enc1d1 libtheora0 libvorbis0a libvorbisenc2 \
+  libx264-164 libx265-199 libxvidcore4 libsoxr0
