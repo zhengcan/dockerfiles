@@ -3,7 +3,8 @@
 ARG JDK_TAG=17-jdk
 FROM zhengcan/dev:media AS media_runtime
 FROM zhengcan/dev:builder AS builder
-FROM --platform=amd64 ubuntu:jammy AS base
+# FROM --platform=amd64 ubuntu:jammy AS base
+FROM --platform=amd64 debian:bookworm AS base
 
 
 ####################
@@ -15,12 +16,13 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/libjemalloc.so.2         /usr/local/lib/libjemalloc.so.2
 COPY --from=builder /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so.4
 
+ENV BTM_VER=0.10.2
 RUN touch /usr/local/install-utils \
   && echo "apt update" >> /usr/local/install-utils \
   && echo "apt install -y htop curl wget vim iputils-ping" >> /usr/local/install-utils \
-  && echo "curl -LO https://github.com/ClementTsang/bottom/releases/download/0.9.6/bottom_0.9.6_amd64.deb" >> /usr/local/install-utils \
-  && echo "dpkg -i bottom_0.9.6_amd64.deb" >> /usr/local/install-utils \
-  && echo "rm bottom_0.9.6_amd64.deb" >> /usr/local/install-utils \
+  && echo "curl -LO https://github.com/ClementTsang/bottom/releases/download/${BTM_VER}/bottom_${BTM_VER}_amd64.deb" >> /usr/local/install-utils \
+  && echo "dpkg -i bottom_${BTM_VER}_amd64.deb" >> /usr/local/install-utils \
+  && echo "rm bottom_${BTM_VER}_amd64.deb" >> /usr/local/install-utils \
   && echo "curl -LO https://github.com/sharkdp/bat/releases/download/v0.24.0/bat-musl_0.24.0_amd64.deb" >> /usr/local/install-utils \
   && echo "dpkg -i bat-musl_0.24.0_amd64.deb" >> /usr/local/install-utils \
   && echo "rm bat-musl_0.24.0_amd64.deb" >> /usr/local/install-utils \

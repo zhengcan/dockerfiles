@@ -1,4 +1,5 @@
-FROM --platform=amd64 ubuntu:jammy AS base
+# FROM --platform=amd64 ubuntu:jammy AS base
+FROM --platform=amd64 debian:bookworm AS base
 
 
 ####################
@@ -22,7 +23,7 @@ ENV BUILD_DIR=/usr/local
 WORKDIR ${SOURCE_DIR}
 
 # Source
-ARG FFMPEG_VER=7.0
+ARG FFMPEG_VER=7.0.2
 RUN curl -O -L --progress-bar https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VER}.tar.bz2 \
   && tar xjvf ffmpeg-${FFMPEG_VER}.tar.bz2 \
   && rm ffmpeg-${FFMPEG_VER}.tar.bz2
@@ -104,7 +105,7 @@ FROM ffmpeg AS opencv
 WORKDIR ${BASE_DIR}
 
 # Source
-ARG OPENCV_VER=4.9.0
+ARG OPENCV_VER=4.10.0
 RUN wget -q --show-progress -O opencv.tgz https://github.com/opencv/opencv/archive/refs/tags/${OPENCV_VER}.tar.gz \
   && wget -q --show-progress -O opencv_contrib.tgz https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VER}.tar.gz \
   && tar zxvf opencv.tgz && rm opencv.tgz \
@@ -135,7 +136,7 @@ FROM opencv AS imagemagick
 WORKDIR ${BASE_DIR}
 
 # Source
-ARG MAGICK_VER=7.1.1-32
+ARG MAGICK_VER=7.1.1-38
 RUN wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${MAGICK_VER}.tar.gz \
   && tar xzvf ${MAGICK_VER}.tar.gz \
   && rm ${MAGICK_VER}.tar.gz
