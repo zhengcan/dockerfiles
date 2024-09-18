@@ -3,8 +3,8 @@
 ARG JDK_TAG=17-jdk
 FROM zhengcan/dev:media AS media_runtime
 FROM zhengcan/dev:builder AS builder
-FROM --platform=amd64 ubuntu:jammy AS base
-# FROM --platform=amd64 debian:bookworm AS base
+FROM ubuntu:noble AS base
+# FROM debian:bookworm AS base
 
 
 ####################

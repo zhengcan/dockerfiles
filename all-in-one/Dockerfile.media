@@ -1,5 +1,5 @@
-FROM --platform=amd64 ubuntu:jammy AS base
-# FROM --platform=amd64 debian:bookworm AS base
+FROM ubuntu:noble AS base
+# FROM debian:bookworm AS base
 
 
 ####################
@@ -124,6 +124,10 @@ RUN mkdir opencv_build && cd opencv_build \
   -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-${OPENCV_VER}/modules \
   # -DWITH_GSTREAMER=OFF \
   -DWITH_FFMPEG=ON \
+  -DBUILD_TESTS=OFF \
+  -DBUILD_PERF_TESTS=OFF \
+  -DBUILD_EXAMPLES=OFF \
+  -DBUILD_opencv_apps=OFF \
   ../opencv-${OPENCV_VER} > ./opencv_cmake \
   && cmake --build . -j $(($(nproc) - 2)) \
   && make install
@@ -164,5 +168,5 @@ ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 RUN apt update \
   && apt install -y zip xz-utils \
   && apt install -y pkg-config librubberband2 libass9 libvidstab1.1 libzimg2 libvpx7 libwebp7 libwebpmux3 libwebpdemux2 libaribb24-0 \
-  libdav1d5 libsnappy1v5 libaom3 libfdk-aac2 libmp3lame0 libopenjp2-7 libopus0 libspeex1 libsvtav1enc0 libtheora0 libvorbis0a libvorbisenc2 \
+  libdav1d5 libsnappy1v5 libaom3 libfdk-aac2 libmp3lame0 libopenjp2-7 libopus0 libspeex1 libsvtav1enc1d1 libtheora0 libvorbis0a libvorbisenc2 \
   libx264-163 libx265-199 libxvidcore4 libsoxr0

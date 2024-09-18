@@ -1,7 +1,7 @@
 ####################
 # Prepare
 FROM zhengcan/dev:media AS media
-FROM --platform=amd64 eclipse-temurin:17-jdk AS openjdk
+FROM eclipse-temurin:17-jdk AS openjdk
 
 
 ####################
