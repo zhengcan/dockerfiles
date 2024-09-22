@@ -15,5 +15,7 @@ r=$? && if [ $r != 0 ]; then exit $r; fi
 docker build -t zhengcan/run:jre-17 --build-arg JDK_TAG=17-jre  --target java         -f Dockerfile.runtime .
 r=$? && if [ $r != 0 ]; then exit $r; fi
 
-docker push -a zhengcan/dev
-docker push -a zhengcan/run
+if [[ "$DRY_RUN" != "" ]]; then
+  docker push -a zhengcan/dev
+  docker push -a zhengcan/run
+fi
