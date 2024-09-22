@@ -1,9 +1,9 @@
 ####################
 # deps
-FROM --platform=amd64 openjdk:11-slim-bullseye as openjdk
-FROM --platform=amd64 dragonwell-registry.cn-hangzhou.cr.aliyuncs.com/dragonwell/dragonwell:11-extended-ga-ubuntu as dragonwell
+FROM --platform=amd64 openjdk:11-slim-bullseye AS openjdk
+FROM --platform=amd64 dragonwell-registry.cn-hangzhou.cr.aliyuncs.com/dragonwell/dragonwell:11-extended-ga-ubuntu AS dragonwell
 
-FROM --platform=amd64 debian:bullseye-slim as select-jdk
+FROM --platform=amd64 debian:bullseye-slim AS select-jdk
 COPY --from=openjdk /usr/local/openjdk-11 /opt/java/openjdk
 COPY --from=dragonwell /opt/java/openjdk /opt/java/dragonwell
 
@@ -13,7 +13,7 @@ RUN mv /opt/java/${JDK} /opt/java/jdk
 
 ####################
 # essential
-FROM --platform=amd64 debian:bullseye-slim as essential
+FROM --platform=amd64 debian:bullseye-slim AS essential
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends binutils curl htop procps vim libmysql++3v5 \
@@ -30,7 +30,7 @@ CMD ["/bin/bash"]
 
 ####################
 # builder
-FROM --platform=amd64 essential as builder
+FROM --platform=amd64 essential AS builder
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -95,7 +95,7 @@ RUN echo '[build]' >> /root/.cargo/config.toml \
 
 ####################
 # jemalloc & tcmalloc
-FROM --platform=amd64 builder as malloc
+FROM --platform=amd64 builder AS malloc
 
 ENV JEMALLOC_VER=5.3.0
 RUN mkdir -p /jemalloc \
@@ -118,7 +118,7 @@ RUN apt update \
 
 ####################
 # runtime
-FROM --platform=amd64 essential as runtime
+FROM --platform=amd64 essential AS runtime
 
 ENV JEMALLOC_SO=/usr/local/lib/libjemalloc.so
 ENV TCMALLOC_SO=/usr/local/lib/libtcmalloc.so

@@ -1,12 +1,12 @@
 ARG STANDARD_IMG=zhengcan/ffmpeg-opencv-runtime
 ARG RUST_BASE=tencentos/tencentos_server31
 
-FROM ${STANDARD_IMG} as deps
+FROM ${STANDARD_IMG} AS deps
 
 ####################
 # Buildpack
 ####################
-FROM ${RUST_BASE} as buildpack
+FROM ${RUST_BASE} AS buildpack
 
 # FFMpeg & OpenCV
 RUN yum install -y freetype-devel libjpeg-turbo-devel openjpeg2-devel turbojpeg-devel libwebp-devel fontconfig-devel \

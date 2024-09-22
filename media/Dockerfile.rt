@@ -35,12 +35,12 @@ COPY install-deps /usr/bin
 
 ####################
 # Tacc Runtime
-FROM ${TACC_BASE} as tacc
+FROM ${TACC_BASE} AS tacc
 
 # FFMpeg & OpenCV
 RUN yum install -y freetype rubberband libass czmq zimg dav1d aom openjpeg2 speex libtheora \
-    soxr frei0r-plugins libxml2 libwebp tesseract \
-    && yum clean all
+  soxr frei0r-plugins libxml2 libwebp tesseract \
+  && yum clean all
 COPY --from=clean-gcc  /usr/local  /usr/local
 ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
 ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
@@ -51,26 +51,26 @@ ARG BANDWHICH_VER=0.21.1
 ARG BTM_VER=0.9.6
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN yum install -y fontconfig wget curl procps crontabs net-tools bind-utils findutils tar \
-    which ncurses python2 telnet psmisc htop iftop less vim openssl \
-    && yum clean all \
-    # Bat
-    && wget https://github.com/sharkdp/bat/releases/download/v${BAT_VER}/bat-v${BAT_VER}-i686-unknown-linux-musl.tar.gz \
-    && tar zxvf bat-v${BAT_VER}-i686-unknown-linux-musl.tar.gz \
-    && mv bat-v${BAT_VER}-i686-unknown-linux-musl/bat /usr/bin \
-    && rm -rf bat-v${BAT_VER}-i686-unknown-linux-musl bat-v${BAT_VER}-i686-unknown-linux-musl.tar.gz \
-    && rm /usr/bin/cat \
-    && ln -s /usr/bin/bat /usr/bin/cat \
-    # Bandwhich
-    && wget https://github.com/imsnif/bandwhich/releases/download/v${BANDWHICH_VER}/bandwhich-v${BANDWHICH_VER}-x86_64-unknown-linux-musl.tar.gz \
-    && tar -zxvf bandwhich-v${BANDWHICH_VER}-x86_64-unknown-linux-musl.tar.gz \
-    && rm bandwhich-v${BANDWHICH_VER}-x86_64-unknown-linux-musl.tar.gz \
-    && mv bandwhich /usr/bin \
-    # Bottom
-    && wget https://github.com/ClementTsang/bottom/releases/download/${BTM_VER}/bottom_x86_64-unknown-linux-musl.tar.gz \
-    && tar -zxvf bottom_x86_64-unknown-linux-musl.tar.gz \
-    && rm bottom_x86_64-unknown-linux-musl.tar.gz \
-    && mv btm /usr/bin \
-    && mv completion/btm.bash /etc/bash_completion.d/btm.bash \
-    && rm -rf completion
+  which ncurses python2 telnet psmisc htop iftop less vim openssl \
+  && yum clean all \
+  # Bat
+  && wget https://github.com/sharkdp/bat/releases/download/v${BAT_VER}/bat-v${BAT_VER}-i686-unknown-linux-musl.tar.gz \
+  && tar zxvf bat-v${BAT_VER}-i686-unknown-linux-musl.tar.gz \
+  && mv bat-v${BAT_VER}-i686-unknown-linux-musl/bat /usr/bin \
+  && rm -rf bat-v${BAT_VER}-i686-unknown-linux-musl bat-v${BAT_VER}-i686-unknown-linux-musl.tar.gz \
+  && rm /usr/bin/cat \
+  && ln -s /usr/bin/bat /usr/bin/cat \
+  # Bandwhich
+  && wget https://github.com/imsnif/bandwhich/releases/download/v${BANDWHICH_VER}/bandwhich-v${BANDWHICH_VER}-x86_64-unknown-linux-musl.tar.gz \
+  && tar -zxvf bandwhich-v${BANDWHICH_VER}-x86_64-unknown-linux-musl.tar.gz \
+  && rm bandwhich-v${BANDWHICH_VER}-x86_64-unknown-linux-musl.tar.gz \
+  && mv bandwhich /usr/bin \
+  # Bottom
+  && wget https://github.com/ClementTsang/bottom/releases/download/${BTM_VER}/bottom_x86_64-unknown-linux-musl.tar.gz \
+  && tar -zxvf bottom_x86_64-unknown-linux-musl.tar.gz \
+  && rm bottom_x86_64-unknown-linux-musl.tar.gz \
+  && mv btm /usr/bin \
+  && mv completion/btm.bash /etc/bash_completion.d/btm.bash \
+  && rm -rf completion
 
 

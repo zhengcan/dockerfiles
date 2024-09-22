@@ -88,7 +88,7 @@ RUN cargo binstall -y cargo-watch cargo-release
 
 ####################
 # jemalloc & tcmalloc
-FROM base as malloc
+FROM base AS malloc
 
 ENV JEMALLOC_VER=5.3.0
 RUN mkdir -p /jemalloc \
@@ -108,7 +108,7 @@ RUN apt update && apt install libtcmalloc-minimal4 \
 
 ####################
 # Final
-FROM builder as final
+FROM builder AS final
 
 ENV JEMALLOC_SO=/usr/local/lib/libjemalloc.so
 ENV TCMALLOC_SO=/usr/local/lib/libtcmalloc.so
