@@ -22,8 +22,8 @@ RUN touch /usr/local/install-utils \
   && echo "apt update" >> /usr/local/install-utils \
   && echo "apt install -y htop curl wget vim iputils-ping" >> /usr/local/install-utils \
   && echo "curl -LO https://github.com/ClementTsang/bottom/releases/download/${BTM_VER}/bottom_${BTM_VER}${BTM_SUB_VER}_amd64.deb" >> /usr/local/install-utils \
-  && echo "dpkg -i bottom_${BTM_VER}_amd64.deb" >> /usr/local/install-utils \
-  && echo "rm bottom_${BTM_VER}_amd64.deb" >> /usr/local/install-utils \
+  && echo "dpkg -i bottom_${BTM_VER}${BTM_SUB_VER}_amd64.deb" >> /usr/local/install-utils \
+  && echo "rm bottom_${BTM_VER}${BTM_SUB_VER}_amd64.deb" >> /usr/local/install-utils \
   && echo "curl -LO https://github.com/sharkdp/bat/releases/download/v0.24.0/bat-musl_0.24.0_amd64.deb" >> /usr/local/install-utils \
   && echo "dpkg -i bat-musl_0.24.0_amd64.deb" >> /usr/local/install-utils \
   && echo "rm bat-musl_0.24.0_amd64.deb" >> /usr/local/install-utils \
