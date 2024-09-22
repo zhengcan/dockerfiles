@@ -4,6 +4,8 @@ docker build -t zhengcan/dev:media-bd                           --target imagema
 r=$? && if [ $r != 0 ]; then exit $r; fi
 docker build -t zhengcan/dev:media                              --target runtime      -f Dockerfile.media   . 
 r=$? && if [ $r != 0 ]; then exit $r; fi
+docker build -t zhengcan/dev:malloc                             --target malloc       -f Dockerfile.builder .
+r=$? && if [ $r != 0 ]; then exit $r; fi
 docker build -t zhengcan/dev:builder                                                  -f Dockerfile.builder .
 r=$? && if [ $r != 0 ]; then exit $r; fi
 docker build -t zhengcan/run:simple                             --target simple       -f Dockerfile.runtime .

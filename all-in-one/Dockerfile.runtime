@@ -1,6 +1,7 @@
 ####################
 # Prepare
 ARG JDK_TAG=17-jdk
+FROM zhengcan/dev:malloc AS malloc
 FROM zhengcan/dev:media AS media_runtime
 FROM zhengcan/dev:builder AS builder
 FROM ubuntu:noble AS base
@@ -35,7 +36,7 @@ FROM media_runtime AS media
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/ /usr/local/
+COPY --from=malloc /usr/local/ /usr/local/
 COPY --from=simple /usr/local/install-utils /usr/local/install-utils
 RUN /usr/local/install-utils
 
@@ -46,7 +47,7 @@ FROM eclipse-temurin:${JDK_TAG} AS java
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/ /usr/local/
+COPY --from=malloc /usr/local/ /usr/local/
 COPY --from=simple /usr/local/install-utils /usr/local/install-utils
 RUN /usr/local/install-utils
 
