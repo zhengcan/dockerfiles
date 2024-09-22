@@ -13,8 +13,7 @@ FROM base AS simple
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/lib/libjemalloc.so.2         /usr/local/lib/libjemalloc.so.2
-COPY --from=builder /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so.4
+COPY --from=builder /usr/local/ /usr/local/
 
 ENV BTM_VER=0.10.2
 RUN touch /usr/local/install-utils \
@@ -26,9 +25,6 @@ RUN touch /usr/local/install-utils \
   && echo "curl -LO https://github.com/sharkdp/bat/releases/download/v0.24.0/bat-musl_0.24.0_amd64.deb" >> /usr/local/install-utils \
   && echo "dpkg -i bat-musl_0.24.0_amd64.deb" >> /usr/local/install-utils \
   && echo "rm bat-musl_0.24.0_amd64.deb" >> /usr/local/install-utils \
-  && echo "ln -s libjemalloc.so.2         /usr/local/lib/libjemalloc.so" >> /usr/local/install-utils \
-  && echo "ln -s libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so" >> /usr/local/install-utils \
-  && echo "ln -s libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc.so" >> /usr/local/install-utils \
   && chmod +x /usr/local/install-utils
 RUN /usr/local/install-utils
 
@@ -39,8 +35,7 @@ FROM media_runtime AS media
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/lib/libjemalloc.so.2         /usr/local/lib/libjemalloc.so.2
-COPY --from=builder /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so.4
+COPY --from=builder /usr/local/ /usr/local/
 COPY --from=simple /usr/local/install-utils /usr/local/install-utils
 RUN /usr/local/install-utils
 
@@ -51,8 +46,7 @@ FROM eclipse-temurin:${JDK_TAG} AS java
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/lib/libjemalloc.so.2         /usr/local/lib/libjemalloc.so.2
-COPY --from=builder /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so.4
+COPY --from=builder /usr/local/ /usr/local/
 COPY --from=simple /usr/local/install-utils /usr/local/install-utils
 RUN /usr/local/install-utils
 

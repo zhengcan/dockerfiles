@@ -100,7 +100,10 @@ RUN mkdir -p /jemalloc \
   && make -j $(($(nproc) - 2)) \
   && make install
 
-RUN apt update && apt install libtcmalloc-minimal4
+RUN apt update && apt install libtcmalloc-minimal4 \
+  && mv /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so.4 \
+  && ln -s /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so \
+  && ln -s /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc.so
 
 
 ####################
@@ -110,13 +113,15 @@ FROM builder as final
 ENV JEMALLOC_SO=/usr/local/lib/libjemalloc.so
 ENV TCMALLOC_SO=/usr/local/lib/libtcmalloc.so
 
-COPY --from=malloc /usr/local/lib/libjemalloc.a     /usr/local/lib/libjemalloc.a
-COPY --from=malloc /usr/local/lib/libjemalloc.so.2  /usr/local/lib/libjemalloc.so.2
-COPY --from=malloc /usr/local/lib/libjemalloc_pic.a /usr/local/lib/libjemalloc_pic.a
-RUN ln -s libjemalloc.so.2                          /usr/local/lib/libjemalloc.so
+COPY --from=malloc /usr/local /usr/local
 
-COPY --from=malloc /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.* /usr/local/lib/libtcmalloc_minimal.so.4
-RUN ln -s libtcmalloc_minimal.so.4                                        /usr/local/lib/libtcmalloc_minimal.so \
-  && ln -s libtcmalloc_minimal.so.4                                       /usr/local/lib/libtcmalloc.so
+# COPY --from=malloc /usr/local/lib/libjemalloc.a     /usr/local/lib/libjemalloc.a
+# COPY --from=malloc /usr/local/lib/libjemalloc.so.2  /usr/local/lib/libjemalloc.so.2
+# COPY --from=malloc /usr/local/lib/libjemalloc_pic.a /usr/local/lib/libjemalloc_pic.a
+# RUN ln -s libjemalloc.so.2                          /usr/local/lib/libjemalloc.so
+
+# COPY --from=malloc /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.* /usr/local/lib/libtcmalloc_minimal.so.4
+# RUN ln -s libtcmalloc_minimal.so.4                                        /usr/local/lib/libtcmalloc_minimal.so \
+#   && ln -s libtcmalloc_minimal.so.4                                       /usr/local/lib/libtcmalloc.so
 
 RUN apt install -y docker.io docker-buildx
