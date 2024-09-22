@@ -14,7 +14,7 @@ FROM base AS simple
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/ /usr/local/
+COPY --from=malloc /usr/local/ /usr/local/
 
 ENV BTM_VER=0.10.2
 ENV BTM_SUB_VER=-1
