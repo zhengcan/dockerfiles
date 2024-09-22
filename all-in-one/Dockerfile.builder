@@ -90,6 +90,8 @@ RUN cargo binstall -y cargo-watch cargo-release
 # jemalloc & tcmalloc
 FROM base AS malloc
 
+RUN rm -rf /usr/local
+
 ENV JEMALLOC_VER=5.3.0
 RUN mkdir -p /jemalloc \
   && cd /jemalloc \
@@ -100,8 +102,10 @@ RUN mkdir -p /jemalloc \
   && make -j $(($(nproc) - 2)) \
   && make install
 
+ENV TCMALLOC_VER=4.5.16
 RUN apt update && apt install libtcmalloc-minimal4 \
-  && mv /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so.4 \
+  && mv /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.${TCMALLOC_VER} /usr/local/lib/libtcmalloc_minimal.so.${TCMALLOC_VER} \
+  && ln -s /usr/local/lib/libtcmalloc_minimal.so.${TCMALLOC_VER} /usr/local/lib/libtcmalloc_minimal.so.4 \
   && ln -s /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc_minimal.so \
   && ln -s /usr/local/lib/libtcmalloc_minimal.so.4 /usr/local/lib/libtcmalloc.so
 
@@ -113,15 +117,10 @@ FROM builder AS final
 ENV JEMALLOC_SO=/usr/local/lib/libjemalloc.so
 ENV TCMALLOC_SO=/usr/local/lib/libtcmalloc.so
 
-COPY --from=malloc /usr/local /usr/local
-
-# COPY --from=malloc /usr/local/lib/libjemalloc.a     /usr/local/lib/libjemalloc.a
-# COPY --from=malloc /usr/local/lib/libjemalloc.so.2  /usr/local/lib/libjemalloc.so.2
-# COPY --from=malloc /usr/local/lib/libjemalloc_pic.a /usr/local/lib/libjemalloc_pic.a
+COPY --from=malloc /usr/local/ /usr/local/
+# COPY --from=malloc /usr/local/lib/libjemalloc.*     /usr/local/lib/
 # RUN ln -s libjemalloc.so.2                          /usr/local/lib/libjemalloc.so
 
-# COPY --from=malloc /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.* /usr/local/lib/libtcmalloc_minimal.so.4
-# RUN ln -s libtcmalloc_minimal.so.4                                        /usr/local/lib/libtcmalloc_minimal.so \
-#   && ln -s libtcmalloc_minimal.so.4                                       /usr/local/lib/libtcmalloc.so
+# COPY --from=malloc /usr/loca/lib/libtcmalloc*.*     /usr/local/lib/
 
 RUN apt install -y docker.io docker-buildx
