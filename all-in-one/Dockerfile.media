@@ -23,7 +23,7 @@ ENV BUILD_DIR=/usr/local
 WORKDIR ${SOURCE_DIR}
 
 # Source
-ARG FFMPEG_VER=7.0.2
+ARG FFMPEG_VER=7.1.1
 RUN curl -O -L --progress-bar https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VER}.tar.bz2 \
   && tar xjvf ffmpeg-${FFMPEG_VER}.tar.bz2 \
   && rm ffmpeg-${FFMPEG_VER}.tar.bz2
@@ -105,7 +105,7 @@ FROM ffmpeg AS opencv
 WORKDIR ${BASE_DIR}
 
 # Source
-ARG OPENCV_VER=4.10.0
+ARG OPENCV_VER=4.11.0
 RUN wget -q --show-progress -O opencv.tgz https://github.com/opencv/opencv/archive/refs/tags/${OPENCV_VER}.tar.gz \
   && wget -q --show-progress -O opencv_contrib.tgz https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VER}.tar.gz \
   && tar zxvf opencv.tgz && rm opencv.tgz \
@@ -140,7 +140,7 @@ FROM opencv AS imagemagick
 WORKDIR ${BASE_DIR}
 
 # Source
-ARG MAGICK_VER=7.1.1-38
+ARG MAGICK_VER=7.1.1-40
 RUN wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${MAGICK_VER}.tar.gz \
   && tar xzvf ${MAGICK_VER}.tar.gz \
   && rm ${MAGICK_VER}.tar.gz
@@ -170,3 +170,5 @@ RUN apt update \
   && apt install -y pkg-config librubberband2 libass9 libvidstab1.1 libzimg2 libvpx9 libwebp7 libwebpmux3 libwebpdemux2 libaribb24-0 \
   libdav1d7 libsnappy1v5 libaom3 libfdk-aac2 libmp3lame0 libopenjp2-7 libopus0 libspeex1 libsvtav1enc1d1 libtheora0 libvorbis0a libvorbisenc2 \
   libx264-164 libx265-199 libxvidcore4 libsoxr0
+
+

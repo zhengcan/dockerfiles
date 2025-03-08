@@ -38,7 +38,7 @@ RUN mkdir -p $SDKMAN_DIR/etc \
 
 ####################
 # Node
-ENV NODE_VER=20.17.0
+ENV NODE_VER=22.14.0
 ENV PATH=$PATH:/opt/node/bin
 RUN cd /opt \
   && curl -fLO https://nodejs.org/dist/v${NODE_VER}/node-v${NODE_VER}-linux-x64.tar.xz \
@@ -73,7 +73,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --de
   && cargo --version
 
 # sccache
-ARG SCCACHE_VER=0.8.1
+ARG SCCACHE_VER=0.10.0
 RUN wget https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VER}/sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
   && tar zxvf sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl.tar.gz \
   && mv sccache-v${SCCACHE_VER}-x86_64-unknown-linux-musl/sccache /usr/bin \
@@ -124,3 +124,5 @@ COPY --from=malloc /usr/local/ /usr/local/
 # COPY --from=malloc /usr/loca/lib/libtcmalloc*.*     /usr/local/lib/
 
 RUN apt install -y docker.io docker-buildx
+
+
